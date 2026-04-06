@@ -21,12 +21,7 @@ class ApiService {
     if (GAS_URL) {
       await this.fetchFromGAS();
     } else {
-      // Load from localStorage if available
-      const savedSiswa = localStorage.getItem('MH_SISWA');
-      if (savedSiswa) this.siswa = JSON.parse(savedSiswa);
-
-      const savedAbsensi = localStorage.getItem('MH_ABSENSI');
-      if (savedAbsensi) this.absensi = JSON.parse(savedAbsensi);
+      this.loadFromLocalStorage();
     }
   }
 
@@ -35,7 +30,7 @@ class ApiService {
     const timeoutId = setTimeout(() => {
       controller.abort();
       console.warn('Koneksi ke Google Apps Script timeout (15 detik).');
-    }, 15000); // Tingkatkan ke 15 detik karena GAS sering lambat di awal
+    }, 15000);
 
     try {
       console.log('Menghubungkan ke Spreadsheet...', GAS_URL);
@@ -44,35 +39,30 @@ class ApiService {
         signal: controller.signal,
         redirect: 'follow'
       });
-      
-      if (!siswaRes.ok) throw new Error(`HTTP error! status: ${siswaRes.status}`);
-      
-      const siswaData = await siswaRes.json();
-      if (Array.isArray(siswaData)) {
-        this.siswa = siswaData;
-        console.log('Data Siswa berhasil dimuat dari Spreadsheet');
+      if (siswaRes.ok) {
+        const siswaData = await siswaRes.json();
+        if (Array.isArray(siswaData)) this.siswa = siswaData;
       }
 
       const absensiRes = await fetch(`${GAS_URL}?action=getAbsensi`, { 
         signal: controller.signal,
         redirect: 'follow'
       });
-      
-      if (!absensiRes.ok) throw new Error(`HTTP error! status: ${absensiRes.status}`);
-      
-      const absensiData = await absensiRes.json();
-      if (Array.isArray(absensiData)) {
-        this.absensi = absensiData;
-        console.log('Data Absensi berhasil dimuat dari Spreadsheet');
+      if (absensiRes.ok) {
+        const absensiData = await absensiRes.json();
+        if (Array.isArray(absensiData)) this.absensi = absensiData;
+      }
+
+      const usersRes = await fetch(`${GAS_URL}?action=getUsers`, { 
+        signal: controller.signal,
+        redirect: 'follow'
+      });
+      if (usersRes.ok) {
+        const usersData = await usersRes.json();
+        if (Array.isArray(usersData)) this.users = usersData;
       }
     } catch (err: any) {
-      if (err.name === 'AbortError') {
-        console.warn('Permintaan dibatalkan karena koneksi terlalu lambat (Timeout).');
-      } else {
-        console.error('Gagal memuat data dari Spreadsheet:', err.message);
-      }
-      
-      // Fallback: Gunakan data lokal jika gagal
+      console.error('Gagal memuat data dari Spreadsheet:', err.message);
       this.loadFromLocalStorage();
     } finally {
       clearTimeout(timeoutId);
@@ -84,6 +74,8 @@ class ApiService {
     if (savedSiswa) this.siswa = JSON.parse(savedSiswa);
     const savedAbsensi = localStorage.getItem('MH_ABSENSI');
     if (savedAbsensi) this.absensi = JSON.parse(savedAbsensi);
+    const savedUsers = localStorage.getItem('MH_USERS');
+    if (savedUsers) this.users = JSON.parse(savedUsers);
   }
 
   private async postToGAS(action: string, data: any) {
@@ -114,20 +106,33 @@ class ApiService {
     if (!GAS_URL) {
       localStorage.setItem('MH_SISWA', JSON.stringify(this.siswa));
       localStorage.setItem('MH_ABSENSI', JSON.stringify(this.absensi));
+      localStorage.setItem('MH_USERS', JSON.stringify(this.users));
     }
   }
 
   async login(email, password) {
+    if (GAS_URL) await this.fetchFromGAS();
     const user = this.users.find(u => u.email === email && u.password === password);
     if (user) {
-      return { success: true, user: { email: user.email, role: user.role, nama: user.nama } };
+      return { success: true, user: { ...user } };
     }
     return { success: false, message: 'Email atau Password salah' };
   }
 
-  async getSiswa() {
+  private filterByRole(data: any[], user: any) {
+    if (!user) return [];
+    if (user.role === UserRole.ADMIN || user.role === UserRole.KEPALA_SEKOLAH || user.kelas_diampu === 'ALL') {
+      return data;
+    }
+    return data.filter(item => {
+      const kelas = item.kelas || item.kelas_diampu;
+      return kelas === user.kelas_diampu;
+    });
+  }
+
+  async getSiswa(user: any) {
     if (GAS_URL) await this.fetchFromGAS();
-    return [...this.siswa];
+    return this.filterByRole(this.siswa, user);
   }
 
   async addSiswa(data) {
@@ -206,14 +211,17 @@ class ApiService {
     };
   }
 
-  async getDashboardStats() {
+  async getDashboardStats(user: any) {
     if (GAS_URL) await this.fetchFromGAS();
     const today = new Date().toISOString().split('T')[0];
+    const filteredSiswa = this.filterByRole(this.siswa, user);
     const absensiToday = this.absensi.filter(a => a.tanggal === today);
     
-    const hadirToday = absensiToday.filter(a => a.status === 'HADIR').length;
-    const terlambatToday = absensiToday.filter(a => a.status === 'TERLAMBAT').length;
-    const totalSiswa = this.siswa.length;
+    const relevantAbsensi = absensiToday.filter(a => filteredSiswa.some(s => s.id === a.idSiswa));
+    
+    const hadirToday = relevantAbsensi.filter(a => a.status === 'HADIR').length;
+    const terlambatToday = relevantAbsensi.filter(a => a.status === 'TERLAMBAT').length;
+    const totalSiswa = filteredSiswa.length;
 
     return {
       totalSiswa,
@@ -223,18 +231,22 @@ class ApiService {
     };
   }
 
-  async getAbsensiLogs() {
+  async getAbsensiLogs(user: any) {
     if (GAS_URL) await this.fetchFromGAS();
-    return this.absensi.map(log => {
-      const s = this.siswa.find(siswa => siswa.id === log.idSiswa);
-      return {
-        ...log,
-        nama: s ? s.nama : 'Tidak Dikenal',
-        kelas: s ? s.kelas : 'N/A',
-        jenjang: s ? s.jenjang : 'N/A',
-        wa: s ? s.wa : ''
-      };
-    }).reverse();
+    const filteredSiswa = this.filterByRole(this.siswa, user);
+    
+    return this.absensi
+      .filter(log => filteredSiswa.some(s => s.id === log.idSiswa))
+      .map(log => {
+        const s = this.siswa.find(siswa => siswa.id === log.idSiswa);
+        return {
+          ...log,
+          nama: s ? s.nama : 'Tidak Dikenal',
+          kelas: s ? s.kelas : 'N/A',
+          jenjang: s ? s.jenjang : 'N/A',
+          wa: s ? s.wa : ''
+        };
+      }).reverse();
   }
 }
 

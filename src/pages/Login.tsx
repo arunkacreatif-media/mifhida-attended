@@ -63,8 +63,8 @@ export default function Login({ onLogin }: { onLogin: (user: any) => void }) {
               referrerPolicy="no-referrer"
             />
           </div>
-          <h1 className="text-3xl font-black text-emerald-900 tracking-tight">Miftahul Hidayah</h1>
-          <p className="text-emerald-600 font-medium mt-2">Sistem Absensi Digital QR Code</p>
+          <h1 className="text-[20px] font-black text-emerald-900 tracking-tight">Miftahul Hidayah</h1>
+          <p className="text-emerald-600 text-body font-medium mt-2">Sistem Absensi Digital QR Code</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -80,7 +80,7 @@ export default function Login({ onLogin }: { onLogin: (user: any) => void }) {
           )}
 
           <div className="space-y-2">
-            <label className="text-sm font-bold text-emerald-900 ml-1">Email Sekolah</label>
+            <label className="text-caption font-bold text-emerald-900 ml-1">Email Sekolah</label>
             <div className="relative">
               <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-emerald-600" size={20} />
               <input
@@ -88,14 +88,14 @@ export default function Login({ onLogin }: { onLogin: (user: any) => void }) {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full pl-12 pr-4 py-4 bg-emerald-50/50 border-2 border-emerald-100 rounded-2xl focus:border-emerald-500 focus:ring-0 transition-all outline-none text-emerald-900 placeholder:text-emerald-300"
+                className="w-full pl-12 pr-4 py-4 bg-emerald-50/50 border-2 border-emerald-100 rounded-2xl focus:border-emerald-500 focus:ring-0 transition-all outline-none text-emerald-900 text-body placeholder:text-emerald-300"
                 placeholder="admin@gmail.com"
               />
             </div>
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-bold text-emerald-900 ml-1">Kata Sandi</label>
+            <label className="text-caption font-bold text-emerald-900 ml-1">Kata Sandi</label>
             <div className="relative">
               <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-emerald-600" size={20} />
               <input
@@ -103,7 +103,7 @@ export default function Login({ onLogin }: { onLogin: (user: any) => void }) {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full pl-12 pr-4 py-4 bg-emerald-50/50 border-2 border-emerald-100 rounded-2xl focus:border-emerald-500 focus:ring-0 transition-all outline-none text-emerald-900 placeholder:text-emerald-300"
+                className="w-full pl-12 pr-4 py-4 bg-emerald-50/50 border-2 border-emerald-100 rounded-2xl focus:border-emerald-500 focus:ring-0 transition-all outline-none text-emerald-900 text-body placeholder:text-emerald-300"
                 placeholder="••••••••"
               />
             </div>
@@ -123,10 +123,10 @@ export default function Login({ onLogin }: { onLogin: (user: any) => void }) {
         </form>
 
         <div className="mt-8 pt-8 border-t border-emerald-100 text-center">
-          <p className="text-emerald-600 text-xs font-medium uppercase tracking-widest">
+          <p className="text-emerald-600 text-caption font-medium uppercase tracking-widest">
             Yayasan Pendidikan Islam Miftahul Hidayah
           </p>
-          <p className="text-emerald-400 text-[10px] mt-1">
+          <p className="text-emerald-400 text-caption mt-1">
             KB • TK • SD Kelas 1-6
           </p>
         </div>

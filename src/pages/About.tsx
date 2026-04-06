@@ -29,7 +29,7 @@ export default function About() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="text-4xl font-black text-emerald-900"
+          className="text-[20px] font-black text-emerald-900"
         >
           Absensi Digital Miftahul Hidayah
         </motion.h1>
@@ -37,7 +37,7 @@ export default function About() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="text-lg text-gray-600 leading-relaxed"
+          className="text-body text-gray-600 leading-relaxed"
         >
           Solusi manajemen kehadiran modern berbasis QR Code yang dirancang khusus untuk 
           Yayasan Pendidikan Islam Miftahul Hidayah. Aplikasi ini mengintegrasikan teknologi 
@@ -90,12 +90,12 @@ export default function About() {
           </div>
           
           <div className="flex-1 space-y-4 text-center md:text-left">
-            <div className="inline-flex items-center gap-2 px-4 py-1 bg-emerald-100 text-emerald-700 rounded-full text-xs font-black uppercase tracking-widest">
+            <div className="inline-flex items-center gap-2 px-4 py-1 bg-emerald-100 text-emerald-700 rounded-full text-caption font-black uppercase tracking-widest">
               <Code size={14} />
               Developer Profile
             </div>
-            <h2 className="text-3xl font-black text-gray-900">Tentang Pengembang</h2>
-            <p className="text-gray-600 leading-relaxed">
+            <h2 className="text-[18px] font-black text-gray-900">Tentang Pengembang</h2>
+            <p className="text-body text-gray-600 leading-relaxed">
               Aplikasi ini dikembangkan oleh tim profesional yang berdedikasi untuk memajukan 
               digitalisasi pendidikan di Indonesia. Kami berfokus pada pengembangan solusi 
               perangkat lunak yang praktis, inovatif, dan berdampak positif bagi institusi pendidikan.
@@ -138,8 +138,8 @@ function FeatureCard({ icon: Icon, title, desc, delay }: any) {
       <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center text-emerald-600 shadow-md mb-6 group-hover:scale-110 transition-transform">
         <Icon size={28} />
       </div>
-      <h3 className="text-xl font-black text-emerald-900 mb-3">{title}</h3>
-      <p className="text-gray-500 text-sm leading-relaxed">{desc}</p>
+      <h3 className="text-[16px] font-black text-emerald-900 mb-3">{title}</h3>
+      <p className="text-gray-500 text-body leading-relaxed">{desc}</p>
     </motion.div>
   );
 }

@@ -35,11 +35,11 @@ export default function Reports({ user }: { user: any }) {
 
   useEffect(() => {
     fetchLogs();
-  }, []);
+  }, [user]);
 
   const fetchLogs = async () => {
     setLoading(true);
-    const data = await api.getAbsensiLogs();
+    const data = await api.getAbsensiLogs(user);
     setLogs(data);
     setLoading(false);
   };
@@ -174,8 +174,8 @@ export default function Reports({ user }: { user: any }) {
             <CheckCircle size={24} />
           </div>
           <div>
-            <p className="text-xs font-black text-emerald-800 uppercase tracking-widest">Hadir Tepat Waktu</p>
-            <h4 className="text-2xl font-black text-emerald-900">{filteredLogs.filter(l => l.status === 'HADIR').length}</h4>
+            <p className="text-caption font-black text-emerald-800 uppercase tracking-widest">Hadir Tepat Waktu</p>
+            <h4 className="text-[20px] font-black text-emerald-900">{filteredLogs.filter(l => l.status === 'HADIR').length}</h4>
           </div>
         </div>
         <div className="bg-amber-50 p-6 rounded-[2rem] border border-amber-100 flex items-center gap-4">
@@ -183,8 +183,8 @@ export default function Reports({ user }: { user: any }) {
             <Clock size={24} />
           </div>
           <div>
-            <p className="text-xs font-black text-amber-800 uppercase tracking-widest">Terlambat</p>
-            <h4 className="text-2xl font-black text-amber-900">{filteredLogs.filter(l => l.status === 'TERLAMBAT').length}</h4>
+            <p className="text-caption font-black text-amber-800 uppercase tracking-widest">Terlambat</p>
+            <h4 className="text-[20px] font-black text-amber-900">{filteredLogs.filter(l => l.status === 'TERLAMBAT').length}</h4>
           </div>
         </div>
         <div className="bg-red-50 p-6 rounded-[2rem] border border-red-100 flex items-center gap-4">
@@ -192,8 +192,8 @@ export default function Reports({ user }: { user: any }) {
             <XCircle size={24} />
           </div>
           <div>
-            <p className="text-xs font-black text-red-800 uppercase tracking-widest">Tidak Hadir</p>
-            <h4 className="text-2xl font-black text-red-900">0</h4>
+            <p className="text-caption font-black text-red-800 uppercase tracking-widest">Tidak Hadir</p>
+            <h4 className="text-[20px] font-black text-red-900">0</h4>
           </div>
         </div>
       </div>
@@ -204,12 +204,12 @@ export default function Reports({ user }: { user: any }) {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-gray-50/50 border-b border-gray-100">
-                <th className="px-8 py-5 text-xs font-black text-gray-400 uppercase tracking-widest">Siswa</th>
-                <th className="px-8 py-5 text-xs font-black text-gray-400 uppercase tracking-widest">ID & Kelas</th>
-                <th className="px-8 py-5 text-xs font-black text-gray-400 uppercase tracking-widest">Tanggal</th>
-                <th className="px-8 py-5 text-xs font-black text-gray-400 uppercase tracking-widest">Jam</th>
-                <th className="px-8 py-5 text-xs font-black text-gray-400 uppercase tracking-widest">Status</th>
-                <th className="px-8 py-5 text-xs font-black text-gray-400 uppercase tracking-widest">Keterangan</th>
+                <th className="px-8 py-5 text-caption font-black text-gray-400 uppercase tracking-widest">Siswa</th>
+                <th className="px-8 py-5 text-caption font-black text-gray-400 uppercase tracking-widest">ID & Kelas</th>
+                <th className="px-8 py-5 text-caption font-black text-gray-400 uppercase tracking-widest">Tanggal</th>
+                <th className="px-8 py-5 text-caption font-black text-gray-400 uppercase tracking-widest">Jam</th>
+                <th className="px-8 py-5 text-caption font-black text-gray-400 uppercase tracking-widest">Status</th>
+                <th className="px-8 py-5 text-caption font-black text-gray-400 uppercase tracking-widest">Keterangan</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
@@ -224,28 +224,28 @@ export default function Reports({ user }: { user: any }) {
                       <div className="w-8 h-8 bg-emerald-100 rounded-lg flex items-center justify-center text-emerald-700 font-black text-xs">
                         {log.nama.charAt(0)}
                       </div>
-                      <span className="font-bold text-gray-900 text-sm">{log.nama}</span>
+                      <span className="font-bold text-gray-900 text-body">{log.nama}</span>
                     </div>
                   </td>
                   <td className="px-8 py-5">
                     <div className="flex flex-col">
-                      <span className="text-xs font-black text-gray-700">{log.idSiswa}</span>
-                      <span className="text-[10px] font-bold text-gray-400">{log.kelas}</span>
+                      <span className="text-caption font-black text-gray-700">{log.idSiswa}</span>
+                      <span className="text-caption font-bold text-gray-400">{log.kelas}</span>
                     </div>
                   </td>
                   <td className="px-8 py-5">
-                    <span className="text-sm font-bold text-gray-600">{log.tanggal}</span>
+                    <span className="text-body font-bold text-gray-600">{log.tanggal}</span>
                   </td>
                   <td className="px-8 py-5">
-                    <span className="text-sm font-black text-emerald-700">{log.jam}</span>
+                    <span className="text-body font-black text-emerald-700">{log.jam}</span>
                   </td>
                   <td className="px-8 py-5">
-                    <span className={`text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest ${log.status === 'HADIR' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+                    <span className={`text-caption font-black px-3 py-1 rounded-full uppercase tracking-widest ${log.status === 'HADIR' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
                       {log.status}
                     </span>
                   </td>
                   <td className="px-8 py-5">
-                    <span className="text-sm text-gray-400 italic">{log.keterangan || '-'}</span>
+                    <span className="text-body text-gray-400 italic">{log.keterangan || '-'}</span>
                   </td>
                 </tr>
               ))}

@@ -47,11 +47,11 @@ export default function Scanner({ user }: { user: any }) {
         scannerRef.current.clear();
       }
     };
-  }, []);
+  }, [user]);
 
   const fetchLogs = async () => {
-    const data = await api.getAbsensiLogs();
-    setLogs(data.slice(0, 5)); // Show last 5 logs
+    const data = await api.getAbsensiLogs(user);
+    setLogs(data.slice(0, 10)); // Show last 10 logs
   };
 
   const showToast = (message: string, type: ToastType = 'success') => {
@@ -149,20 +149,20 @@ export default function Scanner({ user }: { user: any }) {
       <div className="space-y-6">
         <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-100 flex flex-col items-center">
           <div className="w-full flex items-center justify-between mb-8">
-            <h3 className="text-2xl font-black text-gray-900 flex items-center gap-3">
+            <h2 className="text-[18px] font-black text-gray-900 flex items-center gap-3">
               <Scan className="text-emerald-600" />
               Scan QR Code
-            </h3>
+            </h2>
             <div className="flex bg-gray-100 p-1 rounded-xl">
               <button 
                 onClick={() => setAttendanceStatus(ATTENDANCE_STATUS.HADIR)}
-                className={`px-4 py-2 rounded-lg text-xs font-black transition-all ${attendanceStatus === ATTENDANCE_STATUS.HADIR ? 'bg-emerald-600 text-white shadow-md' : 'text-gray-500'}`}
+                className={`px-4 py-2 rounded-lg text-caption font-black transition-all ${attendanceStatus === ATTENDANCE_STATUS.HADIR ? 'bg-emerald-600 text-white shadow-md' : 'text-gray-500'}`}
               >
                 HADIR
               </button>
               <button 
                 onClick={() => setAttendanceStatus(ATTENDANCE_STATUS.TERLAMBAT)}
-                className={`px-4 py-2 rounded-lg text-xs font-black transition-all ${attendanceStatus === ATTENDANCE_STATUS.TERLAMBAT ? 'bg-amber-600 text-white shadow-md' : 'text-gray-500'}`}
+                className={`px-4 py-2 rounded-lg text-caption font-black transition-all ${attendanceStatus === ATTENDANCE_STATUS.TERLAMBAT ? 'bg-amber-600 text-white shadow-md' : 'text-gray-500'}`}
               >
                 TERLAMBAT
               </button>
@@ -175,8 +175,8 @@ export default function Scanner({ user }: { user: any }) {
                 <MessageSquare size={16} />
               </div>
               <div>
-                <p className="text-xs font-black text-emerald-900">Kirim WA Otomatis</p>
-                <p className="text-[10px] text-emerald-600 font-medium">Buka WA setelah scan berhasil</p>
+                <p className="text-caption font-black text-emerald-900">Kirim WA Otomatis</p>
+                <p className="text-caption text-emerald-600 font-medium opacity-80">Buka WA setelah scan berhasil</p>
               </div>
             </div>
             <button 
@@ -216,9 +216,9 @@ export default function Scanner({ user }: { user: any }) {
                   className="absolute inset-0 bg-emerald-600/90 backdrop-blur-md flex flex-col items-center justify-center text-white p-8 text-center z-10"
                 >
                   <CheckCircle size={80} className="mb-6" />
-                  <h4 className="text-3xl font-black mb-2">BERHASIL!</h4>
-                  <p className="text-xl font-bold text-emerald-100">{scanResult.nama}</p>
-                  <p className="text-emerald-200 mt-2 font-medium">Tercatat pukul {scanResult.jam}</p>
+                  <h4 className="text-[20px] font-black mb-2">BERHASIL!</h4>
+                  <p className="text-[16px] font-bold text-emerald-100">{scanResult.nama}</p>
+                  <p className="text-emerald-200 mt-2 text-body font-medium">Tercatat pukul {scanResult.jam}</p>
                   
                   <button 
                     onClick={() => sendWhatsApp(scanResult)}
@@ -258,7 +258,7 @@ export default function Scanner({ user }: { user: any }) {
           <div className="mt-8 w-full">
             <div className="flex items-center gap-4 mb-4">
               <div className="h-px flex-1 bg-gray-100"></div>
-              <span className="text-xs font-black text-gray-400 uppercase tracking-widest">Atau Input Manual</span>
+              <span className="text-caption font-black text-gray-400 uppercase tracking-widest">Atau Input Manual</span>
               <div className="h-px flex-1 bg-gray-100"></div>
             </div>
             <form onSubmit={handleManualSubmit} className="flex gap-3">
@@ -287,10 +287,10 @@ export default function Scanner({ user }: { user: any }) {
       <div className="space-y-6">
         <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-100 h-full">
           <div className="flex items-center justify-between mb-8">
-            <h3 className="text-2xl font-black text-gray-900 flex items-center gap-3">
+            <h2 className="text-[18px] font-black text-gray-900 flex items-center gap-3">
               <History className="text-emerald-600" />
               Riwayat Terakhir
-            </h3>
+            </h2>
             <button onClick={fetchLogs} className="p-2 hover:bg-gray-100 rounded-xl transition-colors text-gray-400">
               <RefreshCw size={20} />
             </button>
@@ -315,7 +315,7 @@ export default function Scanner({ user }: { user: any }) {
                 </div>
                 <div className="flex-1">
                   <div className="flex items-center justify-between">
-                    <p className="font-black text-gray-900">{log.nama || log.idSiswa}</p>
+                    <p className="text-body font-black text-gray-900">{log.nama || log.idSiswa}</p>
                     <div className="flex items-center gap-2">
                       <button 
                         onClick={() => sendWhatsApp(log)}
@@ -324,14 +324,14 @@ export default function Scanner({ user }: { user: any }) {
                       >
                         <MessageSquare size={14} />
                       </button>
-                      <span className="text-[10px] font-black px-2 py-1 bg-white rounded-lg text-gray-400 border border-gray-100">{log.jam}</span>
+                      <span className="text-caption font-black px-2 py-1 bg-white rounded-lg text-gray-400 border border-gray-100">{log.jam}</span>
                     </div>
                   </div>
                   <div className="flex items-center gap-2 mt-1">
-                    <span className={`text-[10px] font-black px-2 py-0.5 rounded-md uppercase tracking-wider ${log.status === 'HADIR' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+                    <span className={`text-caption font-black px-2 py-0.5 rounded-md uppercase tracking-wider ${log.status === 'HADIR' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
                       {log.status}
                     </span>
-                    {log.keterangan && <span className="text-xs text-gray-400 italic">"{log.keterangan}"</span>}
+                    {log.keterangan && <span className="text-caption text-gray-400 italic">"{log.keterangan}"</span>}
                   </div>
                 </div>
               </motion.div>

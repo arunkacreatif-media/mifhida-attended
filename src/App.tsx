@@ -74,106 +74,47 @@ export default function App() {
   const filteredMenu = menuItems.filter(item => item.roles.includes(user.role));
 
   return (
-    <div className="flex h-screen bg-gray-50 font-sans text-gray-900">
-      {/* Sidebar */}
-      <motion.aside 
-        initial={false}
-        animate={{ width: isSidebarOpen ? 280 : 80 }}
-        className="bg-emerald-900 text-white flex flex-col shadow-xl z-20"
-      >
-        <div className="p-6 flex items-center gap-3 border-b border-emerald-800/50">
-          <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center shadow-lg overflow-hidden p-1">
+    <div className="flex flex-col h-screen bg-gray-50 font-sans text-gray-900 overflow-hidden">
+      {/* Top App Bar */}
+      <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6 shadow-sm z-30 shrink-0">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 bg-emerald-800 rounded-lg flex items-center justify-center shadow-md overflow-hidden p-1">
             <img 
               src={LOGOS.SCHOOL} 
-              alt="School Logo" 
+              alt="Logo" 
               className="w-full h-full object-contain"
               referrerPolicy="no-referrer"
             />
           </div>
-          {isSidebarOpen && (
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="overflow-hidden whitespace-nowrap"
-            >
-              <h1 className="font-bold text-lg leading-tight">Miftahul Hidayah</h1>
-              <p className="text-emerald-300 text-xs uppercase tracking-widest font-medium">Absensi Digital</p>
-            </motion.div>
-          )}
+          <h1 className="font-black text-[20px] text-emerald-900 leading-tight">MifHida</h1>
         </div>
 
-        <nav className="flex-1 py-6 px-3 space-y-1 overflow-y-auto">
-          {filteredMenu.map(item => (
-            <button
-              key={item.id}
-              onClick={() => setActivePage(item.id)}
-              className={`w-full flex items-center gap-4 p-3 rounded-xl transition-all duration-200 group ${
-                activePage === item.id 
-                  ? 'bg-gold text-emerald-900 shadow-md font-semibold' 
-                  : 'hover:bg-emerald-800 text-emerald-100'
-              }`}
-            >
-              <item.icon size={22} className={activePage === item.id ? 'text-emerald-900' : 'text-emerald-400 group-hover:text-white'} />
-              {isSidebarOpen && <span>{item.label}</span>}
-              {isSidebarOpen && activePage === item.id && (
-                <motion.div layoutId="active" className="ml-auto">
-                  <ChevronRight size={16} />
-                </motion.div>
-              )}
-            </button>
-          ))}
-        </nav>
-
-        <div className="p-4 border-t border-emerald-800/50">
-          <button
+        <div className="flex items-center gap-3">
+          <div className="text-right hidden sm:block">
+            <p className="text-caption font-black text-gray-800 leading-none">{user.nama}</p>
+            <p className="text-[10px] text-emerald-600 font-bold uppercase tracking-wider mt-0.5">
+              {user.role === UserRole.WALI_KELAS ? `Wali Kelas ${user.kelas_diampu}` : user.role.replace('_', ' ')}
+            </p>
+          </div>
+          <button 
             onClick={handleLogout}
-            className="w-full flex items-center gap-4 p-3 rounded-xl hover:bg-red-500/20 text-red-400 transition-colors"
+            className="w-9 h-9 bg-gray-100 rounded-full flex items-center justify-center text-gray-500 hover:bg-red-50 hover:text-red-600 transition-colors"
           >
-            <LogOut size={22} />
-            {isSidebarOpen && <span>Keluar</span>}
+            <LogOut size={18} />
           </button>
         </div>
-      </motion.aside>
+      </header>
 
-      {/* Main Content */}
-      <main className="flex-1 flex flex-col overflow-hidden">
-        {/* Header */}
-        <header className="h-20 bg-white border-b border-gray-200 flex items-center justify-between px-8 shadow-sm z-10">
-          <div className="flex items-center gap-4">
-            <button 
-              onClick={() => setSidebarOpen(!isSidebarOpen)}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-gray-500"
-            >
-              {isSidebarOpen ? <X size={20} /> : <Menu size={20} />}
-            </button>
-            <h2 className="text-xl font-bold text-gray-800 capitalize">
-              {menuItems.find(i => i.id === activePage)?.label}
-            </h2>
-          </div>
-
-          <div className="flex items-center gap-6">
-            <div className="flex items-center gap-3 px-4 py-2 bg-gray-50 rounded-full border border-gray-100">
-              <div className="text-right">
-                <p className="text-sm font-bold text-gray-800 leading-none">{user.nama}</p>
-                <p className="text-[10px] text-emerald-600 font-bold uppercase tracking-wider mt-1">{user.role.replace('_', ' ')}</p>
-              </div>
-              <div className="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center border-2 border-white shadow-sm">
-                <UserCircle className="text-emerald-700" size={24} />
-              </div>
-            </div>
-          </div>
-        </header>
-
-        {/* Content Area */}
-        <div className="flex-1 overflow-y-auto p-8">
+      {/* Main Content Area */}
+      <main className="flex-1 overflow-y-auto pb-20 custom-scrollbar">
+        <div className="max-w-md mx-auto px-4 py-6">
           <AnimatePresence mode="wait">
             <motion.div
               key={activePage}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.2 }}
-              className="max-w-7xl mx-auto"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
             >
               {activePage === 'dashboard' && <Dashboard user={user} />}
               {activePage === 'students' && <Students user={user} />}
@@ -185,6 +126,36 @@ export default function App() {
           </AnimatePresence>
         </div>
       </main>
+
+      {/* Bottom Navigation Bar */}
+      <nav className="fixed bottom-0 left-0 right-0 h-16 bg-white border-t border-gray-200 flex items-center justify-around px-2 z-30 shadow-[0_-4px_10px_rgba(0,0,0,0.05)]">
+        {filteredMenu.map(item => (
+          <button
+            key={item.id}
+            onClick={() => setActivePage(item.id)}
+            className={`flex flex-col items-center justify-center gap-1 flex-1 h-full transition-all duration-300 relative ${
+              activePage === item.id ? 'text-emerald-800' : 'text-gray-400'
+            }`}
+          >
+            <div className={`p-1.5 rounded-xl transition-all duration-300 ${
+              activePage === item.id ? 'bg-emerald-50' : 'bg-transparent'
+            }`}>
+              <item.icon size={22} strokeWidth={activePage === item.id ? 2.5 : 2} />
+            </div>
+            <span className={`text-caption font-bold transition-all duration-300 ${
+              activePage === item.id ? 'opacity-100 scale-100' : 'opacity-70 scale-95'
+            }`}>
+              {item.label}
+            </span>
+            {activePage === item.id && (
+              <motion.div 
+                layoutId="nav-indicator"
+                className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-1 bg-emerald-800 rounded-b-full"
+              />
+            )}
+          </button>
+        ))}
+      </nav>
     </div>
   );
 }

@@ -51,11 +51,11 @@ export default function Students({ user }: { user: any }) {
 
   useEffect(() => {
     fetchStudents();
-  }, []);
+  }, [user]);
 
   const fetchStudents = async () => {
     setLoading(true);
-    const data = await api.getSiswa();
+    const data = await api.getSiswa(user);
     setStudents(data);
     setLoading(false);
   };
@@ -158,80 +158,64 @@ export default function Students({ user }: { user: any }) {
         )}
       </div>
 
-      {/* Table Section */}
-      <div className="bg-white rounded-[2rem] shadow-sm border border-gray-100 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-gray-50/50 border-b border-gray-100">
-                <th className="px-8 py-5 text-xs font-black text-gray-400 uppercase tracking-widest">Siswa</th>
-                <th className="px-8 py-5 text-xs font-black text-gray-400 uppercase tracking-widest">ID & Kelas</th>
-                <th className="px-8 py-5 text-xs font-black text-gray-400 uppercase tracking-widest">NISN & WA</th>
-                <th className="px-8 py-5 text-xs font-black text-gray-400 uppercase tracking-widest text-right">Aksi</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-50">
-              {loading ? (
-                <tr><td colSpan={4} className="px-8 py-20 text-center text-gray-400">Memuat data...</td></tr>
-              ) : filteredStudents.length === 0 ? (
-                <tr><td colSpan={4} className="px-8 py-20 text-center text-gray-400">Tidak ada data siswa</td></tr>
-              ) : filteredStudents.map((siswa, index) => (
-                <tr key={`${siswa.id}-${index}`} className="hover:bg-emerald-50/30 transition-colors group">
-                  <td className="px-8 py-5">
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 bg-emerald-100 rounded-2xl flex items-center justify-center text-emerald-700 font-black text-lg border-2 border-white shadow-sm">
-                        {siswa.nama.charAt(0)}
-                      </div>
-                      <div>
-                        <p className="font-black text-gray-900 leading-none mb-1">{siswa.nama}</p>
-                        <p className="text-xs text-emerald-600 font-bold uppercase tracking-wider">{siswa.jenjang}</p>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-8 py-5">
-                    <div className="flex flex-col">
-                      <span className="text-sm font-black text-gray-700">{siswa.id}</span>
-                      <span className="text-xs font-bold text-gray-400">Kelas {siswa.kelas}</span>
-                    </div>
-                  </td>
-                  <td className="px-8 py-5">
-                    <div className="flex flex-col">
-                      <span className="text-sm font-bold text-gray-700">{siswa.nisn || '-'}</span>
-                      <span className="text-xs font-medium text-emerald-600">
-                        {siswa.wa ? `+${siswa.wa}` : 'No WA Belum Ada'}
+      {/* List Section */}
+      <div className="space-y-4">
+        {loading ? (
+          <div className="py-20 text-center text-gray-400 bg-white rounded-[2rem] border border-gray-100">
+            <div className="w-10 h-10 border-4 border-emerald-800 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            Memuat data...
+          </div>
+        ) : filteredStudents.length === 0 ? (
+          <div className="py-20 text-center text-gray-400 bg-white rounded-[2rem] border border-gray-100">
+            Tidak ada data siswa
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 gap-4">
+            {filteredStudents.map((siswa, index) => (
+              <motion.div
+                key={`${siswa.id}-${index}`}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.05 }}
+                className="bg-white p-5 rounded-[2rem] shadow-sm border border-gray-100 flex items-center justify-between group active:scale-[0.98] transition-transform"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="w-14 h-14 bg-emerald-100 rounded-2xl flex items-center justify-center text-emerald-700 font-black text-xl border-2 border-white shadow-sm">
+                    {siswa.nama.charAt(0)}
+                  </div>
+                  <div>
+                    <h4 className="font-black text-[16px] text-gray-900 leading-tight">{siswa.nama}</h4>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="text-caption font-black text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full uppercase tracking-wider">
+                        {siswa.kelas}
+                      </span>
+                      <span className="text-caption font-bold text-gray-400">
+                        ID: {siswa.id}
                       </span>
                     </div>
-                  </td>
-                  <td className="px-8 py-5 text-right">
-                    <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button 
-                        onClick={() => handleEdit(siswa)}
-                        className="p-2 hover:bg-emerald-100 text-emerald-700 rounded-xl transition-colors"
-                      >
-                        <Edit2 size={18} />
-                      </button>
-                      <button 
-                        onClick={() => handleDelete(siswa.id)}
-                        className="p-2 hover:bg-red-100 text-red-600 rounded-xl transition-colors"
-                      >
-                        <Trash2 size={18} />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        
-        {/* Pagination Placeholder */}
-        <div className="px-8 py-5 bg-gray-50/50 border-t border-gray-100 flex items-center justify-between">
-          <p className="text-sm text-gray-500 font-medium">Menampilkan {filteredStudents.length} dari {students.length} siswa</p>
-          <div className="flex items-center gap-2">
-            <button className="p-2 hover:bg-white rounded-lg border border-gray-200 text-gray-400 disabled:opacity-50" disabled><ChevronLeft size={18} /></button>
-            <button className="p-2 hover:bg-white rounded-lg border border-gray-200 text-gray-400 disabled:opacity-50" disabled><ChevronRight size={18} /></button>
+                  </div>
+                </div>
+                
+                <div className="flex items-center gap-2">
+                  <button 
+                    onClick={() => handleEdit(siswa)}
+                    className="p-3 bg-gray-50 text-gray-600 rounded-2xl active:bg-emerald-100 active:text-emerald-700 transition-colors"
+                  >
+                    <Edit2 size={18} />
+                  </button>
+                  {user.role === UserRole.ADMIN && (
+                    <button 
+                      onClick={() => handleDelete(siswa.id)}
+                      className="p-3 bg-gray-50 text-red-600 rounded-2xl active:bg-red-100 transition-colors"
+                    >
+                      <Trash2 size={18} />
+                    </button>
+                  )}
+                </div>
+              </motion.div>
+            ))}
           </div>
-        </div>
+        )}
       </div>
 
       {/* Modal Form */}
@@ -253,8 +237,8 @@ export default function Students({ user }: { user: any }) {
             >
               <div className="p-6 md:p-8 bg-emerald-800 text-white flex items-center justify-between sticky top-0 z-10">
                 <div>
-                  <h3 className="text-xl md:text-2xl font-black">{editingSiswa ? 'Edit Data Siswa' : 'Tambah Siswa Baru'}</h3>
-                  <p className="text-emerald-200 text-xs md:text-sm">Lengkapi informasi siswa di bawah ini</p>
+                  <h3 className="text-[20px] font-black">{editingSiswa ? 'Edit Data Siswa' : 'Tambah Siswa Baru'}</h3>
+                  <p className="text-emerald-200 text-caption">Lengkapi informasi siswa di bawah ini</p>
                 </div>
                 <button onClick={() => setModalOpen(false)} className="p-2 hover:bg-white/10 rounded-xl transition-colors">
                   <X size={24} />
@@ -265,100 +249,100 @@ export default function Students({ user }: { user: any }) {
                 <form onSubmit={handleSubmit} className="p-6 md:p-8 space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="md:col-span-2 space-y-2">
-                      <label className="text-sm font-black text-gray-700 ml-1">Nama Lengkap Siswa</label>
+                      <label className="text-caption font-black text-gray-700 ml-1">Nama Lengkap Siswa</label>
                       <input
                         type="text"
                         required
                         value={formData.nama}
                         onChange={(e) => setFormData({ ...formData, nama: e.target.value })}
-                        className="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
+                        className="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all text-body"
                         placeholder="Contoh: Ahmad Zaki"
                       />
                     </div>
 
                     <div className="space-y-2">
-                      <label className="text-sm font-black text-gray-700 ml-1">Jenjang</label>
+                      <label className="text-caption font-black text-gray-700 ml-1">Jenjang</label>
                       <select
                         value={formData.jenjang}
                         onChange={(e) => setFormData({ ...formData, jenjang: e.target.value })}
-                        className="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none"
+                        className="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none text-body"
                       >
                         {JENJANG.map(j => <option key={j} value={j}>{j}</option>)}
                       </select>
                     </div>
 
                     <div className="space-y-2">
-                      <label className="text-sm font-black text-gray-700 ml-1">Kelas</label>
+                      <label className="text-caption font-black text-gray-700 ml-1">Kelas</label>
                       <select
                         value={formData.kelas}
                         onChange={(e) => setFormData({ ...formData, kelas: e.target.value })}
-                        className="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none"
+                        className="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none text-body"
                       >
                         {KELAS[formData.jenjang].map(k => <option key={k} value={k}>{k}</option>)}
                       </select>
                     </div>
 
                     <div className="space-y-2">
-                      <label className="text-sm font-black text-gray-700 ml-1">NISN</label>
+                      <label className="text-caption font-black text-gray-700 ml-1">NISN</label>
                       <input
                         type="text"
                         value={formData.nisn}
                         onChange={(e) => setFormData({ ...formData, nisn: e.target.value })}
-                        className="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none"
+                        className="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none text-body"
                         placeholder="Masukkan NISN"
                       />
                     </div>
 
                     <div className="space-y-2">
-                      <label className="text-sm font-black text-gray-700 ml-1">No. WhatsApp Wali (62...)</label>
+                      <label className="text-caption font-black text-gray-700 ml-1">No. WhatsApp Wali (62...)</label>
                       <input
                         type="text"
                         required
                         value={formData.wa}
                         onChange={(e) => setFormData({ ...formData, wa: e.target.value })}
-                        className="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none"
+                        className="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none text-body"
                         placeholder="628123456789"
                       />
                     </div>
 
                     <div className="space-y-2">
-                      <label className="text-sm font-black text-gray-700 ml-1">Tempat Lahir</label>
+                      <label className="text-caption font-black text-gray-700 ml-1">Tempat Lahir</label>
                       <input
                         type="text"
                         value={formData.tempat_lahir}
                         onChange={(e) => setFormData({ ...formData, tempat_lahir: e.target.value })}
-                        className="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none"
+                        className="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none text-body"
                         placeholder="Contoh: Jakarta"
                       />
                     </div>
 
                     <div className="space-y-2">
-                      <label className="text-sm font-black text-gray-700 ml-1">Tanggal Lahir</label>
+                      <label className="text-caption font-black text-gray-700 ml-1">Tanggal Lahir</label>
                       <input
                         type="date"
                         value={formData.tanggal_lahir}
                         onChange={(e) => setFormData({ ...formData, tanggal_lahir: e.target.value })}
-                        className="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none"
+                        className="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none text-body"
                       />
                     </div>
 
                     <div className="md:col-span-2 space-y-2">
-                      <label className="text-sm font-black text-gray-700 ml-1">Alamat Lengkap</label>
+                      <label className="text-caption font-black text-gray-700 ml-1">Alamat Lengkap</label>
                       <textarea
                         value={formData.alamat}
                         onChange={(e) => setFormData({ ...formData, alamat: e.target.value })}
-                        className="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none min-h-[100px]"
+                        className="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none min-h-[100px] text-body"
                         placeholder="Masukkan alamat lengkap siswa..."
                       />
                     </div>
 
                     <div className="md:col-span-2 space-y-2">
-                      <label className="text-sm font-black text-gray-700 ml-1">URL Foto (Opsional)</label>
+                      <label className="text-caption font-black text-gray-700 ml-1">URL Foto (Opsional)</label>
                       <input
                         type="url"
                         value={formData.foto}
                         onChange={(e) => setFormData({ ...formData, foto: e.target.value })}
-                        className="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none"
+                        className="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none text-body"
                         placeholder="https://example.com/foto.jpg"
                       />
                     </div>

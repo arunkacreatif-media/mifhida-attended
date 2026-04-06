@@ -1,13 +1,37 @@
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@400;500;600;700;800&family=Roboto:wght@400;500;700&display=swap');
 @import "tailwindcss";
 
 @theme {
-  --font-sans: "Poppins", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Inter", "Poppins", "Roboto", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Poppins", "Inter", "Roboto", sans-serif;
 }
 
 @layer base {
+  html {
+    font-size: 14px; /* Setting base to 14px for body text */
+  }
   body {
     @apply bg-gray-50 text-gray-900 antialiased font-sans;
+    font-size: 14px;
+  }
+  h1 {
+    @apply font-display font-bold;
+    font-size: 20px;
+  }
+  h2 {
+    @apply font-display font-semibold;
+    font-size: 18px;
+  }
+  h3 {
+    @apply font-display font-medium;
+    font-size: 16px;
+  }
+  .text-body {
+    font-size: 14px;
+    @apply font-normal;
+  }
+  .text-caption {
+    font-size: 12px;
   }
 }
 

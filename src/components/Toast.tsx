@@ -44,7 +44,7 @@ export default function Toast({ message, type, isVisible, onClose, duration = 30
           className={`fixed bottom-8 left-1/2 z-[100] flex items-center gap-3 px-6 py-4 rounded-2xl border shadow-2xl min-w-[320px] ${bgColors[type]}`}
         >
           <div className="shrink-0">{icons[type]}</div>
-          <p className="flex-1 text-sm font-black text-gray-800">{message}</p>
+          <p className="flex-1 text-body font-black text-gray-800">{message}</p>
           <button 
             onClick={onClose}
             className="p-1 hover:bg-black/5 rounded-lg transition-colors text-gray-400"

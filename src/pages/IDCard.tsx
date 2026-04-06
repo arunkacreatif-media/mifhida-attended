@@ -50,7 +50,7 @@ export default function IDCard({ user }: { user: any }) {
 
   const fetchStudents = async () => {
     setLoading(true);
-    const data = await api.getSiswa();
+    const data = await api.getSiswa(user);
     setStudents(data);
     const classes = [...new Set(data.map((s: any) => s.kelas).filter(Boolean))];
     setAvailableClasses(classes);
@@ -147,8 +147,8 @@ export default function IDCard({ user }: { user: any }) {
         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Kartu Identitas Siswa</h1>
-              <p className="text-gray-500 mt-1">Cetak kartu ID untuk siswa/i Miftahul Hidayah</p>
+              <h1 className="text-[20px] font-bold text-gray-900">Kartu Identitas Siswa</h1>
+              <p className="text-body text-gray-500 mt-1">Cetak kartu ID untuk siswa/i Miftahul Hidayah</p>
             </div>
             
             <div className="flex items-center gap-3">
@@ -217,16 +217,16 @@ export default function IDCard({ user }: { user: any }) {
             <div className="flex items-center gap-6">
               <div className="flex items-center gap-2">
                 <Users size={20} className="text-emerald-600" />
-                <span className="text-sm text-gray-600">Total Siswa:</span>
+                <span className="text-body text-gray-600">Total Siswa:</span>
                 <span className="font-bold text-gray-900">{filteredStudents.length}</span>
               </div>
               <div className="flex items-center gap-2">
                 <CheckCircle2 size={20} className="text-emerald-600" />
-                <span className="text-sm text-gray-600">Dipilih:</span>
+                <span className="text-body text-gray-600">Dipilih:</span>
                 <span className="font-bold text-emerald-600">{selectedStudents.length}</span>
               </div>
             </div>
-            <div className="text-xs text-gray-500">
+            <div className="text-caption text-gray-500">
               * Klik pada kartu untuk memilih/membatalkan
             </div>
           </div>
@@ -356,8 +356,8 @@ export default function IDCard({ user }: { user: any }) {
               <AlertCircle size={20} className="text-blue-600" />
             </div>
             <div className="space-y-2">
-              <h4 className="font-bold text-gray-900">Panduan Cetak Kartu ID (Portrait)</h4>
-              <ul className="text-sm text-gray-600 space-y-1 list-disc ml-4">
+              <h4 className="text-[16px] font-bold text-gray-900">Panduan Cetak Kartu ID (Portrait)</h4>
+              <ul className="text-body text-gray-600 space-y-1 list-disc ml-4">
                 <li>Klik pada kartu untuk memilih siswa yang akan dicetak</li>
                 <li>Gunakan tombol <strong>"Pilih Semua"</strong> untuk memilih semua siswa yang tampil</li>
                 <li>Klik <strong>"Cetak"</strong> untuk mengunduh file PDF ukuran kartu ID portrait (54mm x 86mm)</li>
