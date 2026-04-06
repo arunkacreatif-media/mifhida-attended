@@ -19,7 +19,7 @@ import {
   MessageSquare
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Html5QrcodeScanner } from 'html5-qrcode';
+import { Html5QrcodeScanner, Html5QrcodeScanType } from 'html5-qrcode';
 import { api } from '../services/api';
 import { ATTENDANCE_STATUS } from '../lib/constants';
 import Toast, { ToastType } from '../components/Toast';
@@ -73,17 +73,40 @@ export default function Scanner({ user }: { user: any }) {
   };
 
   const startScanner = () => {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      showToast('Browser Anda tidak mendukung akses kamera. Gunakan Chrome atau Safari.', 'error');
+      return;
+    }
+
     setIsScanning(true);
     setTimeout(() => {
-      const scanner = new Html5QrcodeScanner(
-        "reader",
-        { fps: 10, qrbox: { width: 250, height: 250 } },
-        /* verbose= */ false
-      );
-      
-      scanner.render(onScanSuccess, onScanFailure);
-      scannerRef.current = scanner;
-    }, 100);
+      try {
+        const scanner = new Html5QrcodeScanner(
+          "reader",
+          { 
+            fps: 10, 
+            qrbox: (viewfinderWidth, viewfinderHeight) => {
+              const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
+              const qrboxSize = Math.floor(minEdge * 0.7);
+              return {
+                width: qrboxSize,
+                height: qrboxSize
+              };
+            },
+            aspectRatio: 1.0,
+            supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA]
+          },
+          /* verbose= */ false
+        );
+        
+        scanner.render(onScanSuccess, onScanFailure);
+        scannerRef.current = scanner;
+      } catch (err) {
+        console.error("Scanner init error:", err);
+        showToast('Gagal mengaktifkan kamera. Pastikan izin kamera diberikan.', 'error');
+        setIsScanning(false);
+      }
+    }, 300);
   };
 
   const onScanSuccess = async (decodedText: string) => {
@@ -197,10 +220,15 @@ export default function Scanner({ user }: { user: any }) {
                 <p className="text-gray-400 text-sm mb-8">Klik tombol di bawah untuk mulai memindai kartu siswa</p>
                 <button 
                   onClick={startScanner}
-                  className="px-8 py-4 bg-emerald-600 hover:bg-emerald-500 rounded-2xl font-bold transition-all shadow-lg shadow-emerald-900/40"
+                  className="px-8 py-4 bg-emerald-600 hover:bg-emerald-600 active:scale-95 rounded-2xl font-black transition-all shadow-lg shadow-emerald-900/40 mb-6"
                 >
                   Aktifkan Kamera
                 </button>
+                
+                <div className="flex flex-col items-center gap-2 opacity-60">
+                  <p className="text-[10px] uppercase tracking-widest font-black">Masalah Kamera?</p>
+                  <p className="text-[12px] font-medium max-w-[200px]">Pastikan buka di <span className="font-black text-emerald-400">Chrome/Safari</span> (Bukan dari WA/FB)</p>
+                </div>
               </div>
             ) : (
               <div id="reader" className="w-full h-full"></div>
