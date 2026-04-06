@@ -25,9 +25,9 @@ export enum UserRole {
 
 export const JENJANG = ['KB', 'TK', 'SD'];
 export const KELAS = {
-  KB: ['KB-A', 'KB-B'],
-  TK: ['TK-A', 'TK-B'],
-  SD: ['1-A', '1-B', '2-A', '2-B', '3-A', '3-B', '4-A', '4-B', '5-A', '5-B', '6-A', '6-B'],
+  KB: ['KB'],
+  TK: ['TK'],
+  SD: ['1', '2', '3', '4', '5', '6'],
 };
 
 export const ATTENDANCE_STATUS = {

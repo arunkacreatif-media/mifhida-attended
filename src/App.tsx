@@ -63,11 +63,11 @@ export default function App() {
   if (!user) return <Login onLogin={handleLogin} />;
 
   const menuItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: [UserRole.ADMIN, UserRole.WALI_KELAS, UserRole.KEPALA_SEKOLAH] },
-    { id: 'students', label: 'Data Siswa', icon: Users, roles: [UserRole.ADMIN, UserRole.WALI_KELAS] },
-    { id: 'scanner', label: 'Scan Absensi', icon: Camera, roles: [UserRole.ADMIN, UserRole.WALI_KELAS] },
-    { id: 'idcard', label: 'Kartu Siswa', icon: CreditCard, roles: [UserRole.ADMIN] },
-    { id: 'reports', label: 'Rekapitulasi', icon: FileText, roles: [UserRole.ADMIN, UserRole.KEPALA_SEKOLAH] },
+    { id: 'dashboard', label: 'Home', icon: LayoutDashboard, roles: [UserRole.ADMIN, UserRole.WALI_KELAS, UserRole.KEPALA_SEKOLAH] },
+    { id: 'students', label: 'Siswa', icon: Users, roles: [UserRole.ADMIN, UserRole.WALI_KELAS] },
+    { id: 'scanner', label: 'Absensi', icon: Camera, roles: [UserRole.ADMIN, UserRole.WALI_KELAS] },
+    { id: 'idcard', label: 'Kartu', icon: CreditCard, roles: [UserRole.ADMIN] },
+    { id: 'reports', label: 'Rekap', icon: FileText, roles: [UserRole.ADMIN, UserRole.KEPALA_SEKOLAH] },
     { id: 'about', label: 'Tentang', icon: Info, roles: [UserRole.ADMIN, UserRole.WALI_KELAS, UserRole.KEPALA_SEKOLAH] },
   ];
 

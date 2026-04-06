@@ -40,7 +40,7 @@ export default function Students({ user }: { user: any }) {
   const [formData, setFormData] = useState({
     nama: '',
     jenjang: 'SD',
-    kelas: '1-A',
+    kelas: '1',
     nisn: '',
     wa: '',
     tempat_lahir: '',
@@ -78,7 +78,7 @@ export default function Students({ user }: { user: any }) {
     if (result.success) {
       setModalOpen(false);
       setEditingSiswa(null);
-      setFormData({ nama: '', jenjang: 'SD', kelas: '1-A', nisn: '', wa: '', tempat_lahir: '', tanggal_lahir: '', alamat: '', foto: '' });
+      setFormData({ nama: '', jenjang: 'SD', kelas: '1', nisn: '', wa: '', tempat_lahir: '', tanggal_lahir: '', alamat: '', foto: '' });
       fetchStudents();
     } else {
       showToast(result.message || 'Gagal menyimpan data', 'error');

@@ -73,11 +73,11 @@ function setupDatabase(ss) {
     
     // Data Dummy Siswa
     const dummySiswa = [
-      ['MH-001', 'Ahmad Fauzi', 'VII-A', 'SMP', '0012345678', '628123456789', 'Jakarta', '2010-05-15', 'Jl. Merdeka No. 10', '', new Date().toISOString()],
-      ['MH-002', 'Siti Aminah', 'X-IPA-1', 'SMA', '0023456789', '628123456789', 'Bandung', '2008-11-20', 'Jl. Melati No. 5', '', new Date().toISOString()],
-      ['MH-003', 'Budi Santoso', 'IV-B', 'SD', '0034567890', '628123456789', 'Surabaya', '2013-02-10', 'Jl. Mawar No. 2', '', new Date().toISOString()],
-      ['MH-004', 'Dewi Lestari', 'VII-A', 'SMP', '0045678901', '628123456789', 'Yogyakarta', '2009-08-25', 'Jl. Anggrek No. 12', '', new Date().toISOString()],
-      ['MH-005', 'Rizky Pratama', 'X-IPA-1', 'SMA', '0056789012', '628123456789', 'Semarang', '2007-01-30', 'Jl. Dahlia No. 8', '', new Date().toISOString()]
+      ['MH-001', 'Ahmad Fauzi', '1', 'SD', '0012345678', '628123456789', 'Jakarta', '2010-05-15', 'Jl. Merdeka No. 10', '', new Date().toISOString()],
+      ['MH-002', 'Siti Aminah', '2', 'SD', '0023456789', '628123456789', 'Bandung', '2008-11-20', 'Jl. Melati No. 5', '', new Date().toISOString()],
+      ['MH-003', 'Budi Santoso', 'KB', 'KB', '0034567890', '628123456789', 'Surabaya', '2013-02-10', 'Jl. Mawar No. 2', '', new Date().toISOString()],
+      ['MH-004', 'Dewi Lestari', 'TK', 'TK', '0045678901', '628123456789', 'Yogyakarta', '2009-08-25', 'Jl. Anggrek No. 12', '', new Date().toISOString()],
+      ['MH-005', 'Rizky Pratama', '3', 'SD', '0056789012', '628123456789', 'Semarang', '2007-01-30', 'Jl. Dahlia No. 8', '', new Date().toISOString()]
     ];
     
     dummySiswa.forEach(row => sheetSiswa.appendRow(row));
@@ -105,8 +105,8 @@ function setupDatabase(ss) {
     
     const dummyUsers = [
       ['admin@mifhida.com', 'admin123', 'Super Admin', 'ADMIN', 'ALL'],
-      ['guru1@mifhida.com', 'guru123', 'Ust. Ahmad', 'WALI_KELAS', 'VII-A'],
-      ['guru2@mifhida.com', 'guru123', 'Ustz. Siti', 'WALI_KELAS', 'X-IPA-1'],
+      ['guru1@mifhida.com', 'guru123', 'Ust. Ahmad', 'WALI_KELAS', '1'],
+      ['guru2@mifhida.com', 'guru123', 'Ustz. Siti', 'WALI_KELAS', '2'],
       ['kepala@mifhida.com', 'kepala123', 'Drs. H. Mulyadi', 'KEPALA_SEKOLAH', 'ALL']
     ];
     dummyUsers.forEach(row => sheetUsers.appendRow(row));
