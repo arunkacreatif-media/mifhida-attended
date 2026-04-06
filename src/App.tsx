@@ -25,6 +25,7 @@ import { UserRole, COLORS, LOGOS } from './lib/constants';
 import { api } from './services/api';
 
 // Pages
+// Vercel Integration Ready
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Students from './pages/Students';
