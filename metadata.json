@@ -1,0 +1,5 @@
+{
+  "name": "Absensi Digital Miftahul Hidayah",
+  "description": "Sistem Absensi Digital berbasis QR Code untuk Yayasan Pendidikan Islam Miftahul Hidayah (KB, TK, SD).",
+  "requestFramePermissions": ["camera"]
+}

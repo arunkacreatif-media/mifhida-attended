@@ -1,0 +1,202 @@
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ * 
+ * SISTEM ABSENSI DIGITAL QR CODE
+ * Yayasan Pendidikan Islam Miftahul Hidayah
+ * 
+ * Penulis: Senior Software Architect (AI Studio)
+ */
+
+const SPREADSHEET_ID = SpreadsheetApp.getActiveSpreadsheet().getId();
+const SHEETS = {
+  SISWA: 'DATA_SISWA',
+  ABSENSI: 'ABSENSI',
+  USERS: 'USERS',
+  LOG_WA: 'LOG_WA',
+  SETTING: 'SETTING'
+};
+
+/**
+ * Inisialisasi awal sistem (WAJIB DIJALANKAN SEKALI)
+ */
+function initSetup() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  
+  // 1. Create Sheets if not exist
+  Object.values(SHEETS).forEach(sheetName => {
+    if (!ss.getSheetByName(sheetName)) {
+      ss.insertSheet(sheetName);
+    }
+  });
+
+  // 2. Setup Headers
+  const headers = {
+    [SHEETS.SISWA]: ['ID_SISWA', 'NAMA', 'KELAS', 'JENJANG', 'WALI', 'WA', 'FOTO', 'CREATED_AT'],
+    [SHEETS.ABSENSI]: ['ID_SISWA', 'TANGGAL', 'JAM', 'STATUS', 'KETERANGAN'],
+    [SHEETS.USERS]: ['EMAIL', 'PASSWORD', 'ROLE', 'NAMA'],
+    [SHEETS.LOG_WA]: ['ID_SISWA', 'PESAN', 'STATUS', 'TIMESTAMP'],
+    [SHEETS.SETTING]: ['KEY', 'VALUE']
+  };
+
+  Object.entries(headers).forEach(([sheetName, headerRow]) => {
+    const sheet = ss.getSheetByName(sheetName);
+    sheet.getRange(1, 1, 1, headerRow.length).setValues([headerRow]).setFontWeight('bold');
+  });
+
+  // 3. Fill Dummy Data
+  fillDummyData();
+}
+
+function fillDummyData() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  
+  // Users
+  const userSheet = ss.getSheetByName(SHEETS.USERS);
+  if (userSheet.getLastRow() <= 1) {
+    userSheet.appendRow(['admin@gmail.com', 'admin123', 'ADMIN', 'Administrator Yayasan']);
+    userSheet.appendRow(['guru1@gmail.com', 'guru123', 'WALI_KELAS', 'Ustadzah Fatimah']);
+    userSheet.appendRow(['guru2@gmail.com', 'guru123', 'WALI_KELAS', 'Ustadz Ahmad']);
+    userSheet.appendRow(['kepala@gmail.com', 'kepala123', 'KEPALA_SEKOLAH', 'H. Muhammad Yusuf']);
+  }
+
+  // Siswa
+  const siswaSheet = ss.getSheetByName(SHEETS.SISWA);
+  if (siswaSheet.getLastRow() <= 1) {
+    const dummySiswa = [
+      ['MH-001', 'Ahmad Zaki', 'KB-A', 'KB', 'Bp. Ridwan', '628123456789', '', new Date()],
+      ['MH-002', 'Siti Aminah', 'TK-B', 'TK', 'Ibu Sarah', '628123456790', '', new Date()],
+      ['MH-003', 'Fatih Al-Fatih', '1-A', 'SD', 'Bp. Usman', '628123456791', '', new Date()],
+      ['MH-004', 'Aisyah Humaira', '2-B', 'SD', 'Ibu Khadijah', '628123456792', '', new Date()],
+      ['MH-005', 'Hasan Basri', '3-A', 'SD', 'Bp. Ali', '628123456793', '', new Date()],
+      ['MH-006', 'Husain Mansur', '4-B', 'SD', 'Bp. Umar', '628123456794', '', new Date()],
+      ['MH-007', 'Maryam Jamilah', '5-A', 'SD', 'Ibu Maryam', '628123456795', '', new Date()],
+      ['MH-008', 'Yahya Zakaria', '6-B', 'SD', 'Bp. Zakaria', '628123456796', '', new Date()],
+      ['MH-009', 'Ibrahim Khalil', '1-B', 'SD', 'Bp. Ibrahim', '628123456797', '', new Date()],
+      ['MH-010', 'Sarah Shofia', 'TK-A', 'TK', 'Ibu Sarah', '628123456798', '', new Date()]
+    ];
+    siswaSheet.getRange(2, 1, dummySiswa.length, dummySiswa[0].length).setValues(dummySiswa);
+  }
+}
+
+/**
+ * Web App Entry Point
+ */
+function doGet(e) {
+  return HtmlService.createHtmlOutputFromFile('index')
+    .setTitle('Absensi Digital Miftahul Hidayah')
+    .addMetaTag('viewport', 'width=device-width, initial-scale=1')
+    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+}
+
+/**
+ * API: Login
+ */
+function login(email, password) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEETS.USERS);
+  const data = sheet.getDataRange().getValues();
+  
+  for (let i = 1; i < data.length; i++) {
+    if (data[i][0] === email && data[i][1] === password) {
+      return {
+        success: true,
+        user: {
+          email: data[i][0],
+          role: data[i][2],
+          nama: data[i][3]
+        }
+      };
+    }
+  }
+  return { success: false, message: 'Email atau Password salah' };
+}
+
+/**
+ * API: Get All Students
+ */
+function getSiswa() {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEETS.SISWA);
+  const data = sheet.getDataRange().getValues();
+  const headers = data[0];
+  const result = [];
+  
+  for (let i = 1; i < data.length; i++) {
+    const obj = {};
+    headers.forEach((header, index) => {
+      obj[header] = data[i][index];
+    });
+    result.push(obj);
+  }
+  return result;
+}
+
+/**
+ * API: Submit Attendance
+ */
+function submitAbsensi(idSiswa, status, keterangan = '') {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const absensiSheet = ss.getSheetByName(SHEETS.ABSENSI);
+  const siswaSheet = ss.getSheetByName(SHEETS.SISWA);
+  
+  // 1. Validate Student
+  const siswaData = siswaSheet.getDataRange().getValues();
+  let siswa = null;
+  for (let i = 1; i < siswaData.length; i++) {
+    if (siswaData[i][0] === idSiswa) {
+      siswa = { id: siswaData[i][0], nama: siswaData[i][1], wa: siswaData[i][5] };
+      break;
+    }
+  }
+  
+  if (!siswa) return { success: false, message: 'Siswa tidak ditemukan' };
+  
+  // 2. Anti-Double Scan (1x per day)
+  const today = Utilities.formatDate(new Date(), "GMT+7", "yyyy-MM-dd");
+  const absensiData = absensiSheet.getDataRange().getValues();
+  for (let i = 1; i < absensiData.length; i++) {
+    const rowDate = Utilities.formatDate(new Date(absensiData[i][1]), "GMT+7", "yyyy-MM-dd");
+    if (absensiData[i][0] === idSiswa && rowDate === today) {
+      return { success: false, message: 'Sudah absen hari ini' };
+    }
+  }
+  
+  // 3. Save Attendance
+  const now = new Date();
+  const jam = Utilities.formatDate(now, "GMT+7", "HH:mm:ss");
+  absensiSheet.appendRow([idSiswa, now, jam, status, keterangan]);
+  
+  // 4. (Optional) Trigger WA Notification Logic here
+  
+  return { success: true, message: `Absensi ${siswa.nama} berhasil`, data: { nama: siswa.nama, jam: jam } };
+}
+
+/**
+ * API: Get Dashboard Stats
+ */
+function getDashboardStats() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const siswaSheet = ss.getSheetByName(SHEETS.SISWA);
+  const absensiSheet = ss.getSheetByName(SHEETS.ABSENSI);
+  
+  const totalSiswa = siswaSheet.getLastRow() - 1;
+  const today = Utilities.formatDate(new Date(), "GMT+7", "yyyy-MM-dd");
+  const absensiData = absensiSheet.getDataRange().getValues();
+  
+  let hadirToday = 0;
+  let terlambatToday = 0;
+  
+  for (let i = 1; i < absensiData.length; i++) {
+    const rowDate = Utilities.formatDate(new Date(absensiData[i][1]), "GMT+7", "yyyy-MM-dd");
+    if (rowDate === today) {
+      if (absensiData[i][3] === 'HADIR') hadirToday++;
+      if (absensiData[i][3] === 'TERLAMBAT') terlambatToday++;
+    }
+  }
+  
+  return {
+    totalSiswa,
+    hadirToday,
+    terlambatToday,
+    tidakHadirToday: totalSiswa - (hadirToday + terlambatToday)
+  };
+}
