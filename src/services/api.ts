@@ -235,6 +235,22 @@ class ApiService {
     return { success: true };
   }
 
+  private async sendWhatsApp(target: string, message: string) {
+    try {
+      const res = await fetch('/api/send-whatsapp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ target, message })
+      });
+      const result = await res.json();
+      console.log('WhatsApp Notification Result:', result);
+      return result;
+    } catch (err: any) {
+      console.error('Failed to send WhatsApp notification:', err.message);
+      return { success: false, message: err.message };
+    }
+  }
+
   async submitAbsensi(idSiswa, status, keterangan = '') {
     const sId = this.normalizeId(idSiswa);
     const siswa = this.siswa.find(s => this.normalizeId(s.id) === sId);
@@ -260,6 +276,20 @@ class ApiService {
 
     this.absensi.push(newAbsensi);
     this.save();
+
+    // Kirim Notifikasi WhatsApp via Fonnte (Server-side)
+    if (siswa.wa) {
+      const message = `*Pemberitahuan Absensi YPI Miftahul Hidayah*\n\n` +
+                      `Ananda: *${siswa.nama}*\n` +
+                      `Kelas: *${siswa.kelas}*\n` +
+                      `Status: *${status}*\n` +
+                      `Waktu: *${jam}*\n` +
+                      `Keterangan: ${keterangan || '-'}\n\n` +
+                      `Terima kasih.`;
+      
+      // Kirim tanpa menunggu (background) agar tidak memperlambat UI
+      this.sendWhatsApp(siswa.wa, message);
+    }
     
     return { 
       success: true, 
