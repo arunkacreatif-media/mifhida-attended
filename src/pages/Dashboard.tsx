@@ -40,6 +40,13 @@ export default function Dashboard({ user, onNavigate }: { user: any, onNavigate:
 
   useEffect(() => {
     fetchStats();
+    
+    // Auto-refresh setiap 30 detik untuk menjaga data tetap "real-time"
+    const interval = setInterval(() => {
+      fetchStats(false); // Refresh di background tanpa loading spinner
+    }, 30000);
+    
+    return () => clearInterval(interval);
   }, [user]);
 
   if (loading) return (
