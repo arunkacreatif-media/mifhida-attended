@@ -27,7 +27,8 @@ export default function Dashboard({ user, onNavigate }: { user: any, onNavigate:
     else setIsRefreshing(true);
     
     try {
-      const data = await api.getDashboardStats(user, !showLoading);
+      // Selalu force fetch saat di Dashboard untuk memastikan data paling update
+      const data = await api.getDashboardStats(user, true);
       setStats(data);
     } catch (error) {
       console.error("Error fetching stats:", error);

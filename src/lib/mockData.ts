@@ -27,7 +27,7 @@ export const INITIAL_SISWA = [
 ];
 
 export const INITIAL_ABSENSI = [
-  { idSiswa: 'MH-001', tanggal: new Date().toISOString().split('T')[0], jam: '07:15:00', status: 'HADIR', keterangan: '' },
-  { idSiswa: 'MH-002', tanggal: new Date().toISOString().split('T')[0], jam: '07:20:00', status: 'HADIR', keterangan: '' },
-  { idSiswa: 'MH-003', tanggal: new Date().toISOString().split('T')[0], jam: '07:45:00', status: 'TERLAMBAT', keterangan: 'Macet' },
+  { idsiswa: 'MH-001', tanggal: new Date().toISOString().split('T')[0], jam: '07:15:00', status: 'HADIR', keterangan: '' },
+  { idsiswa: 'MH-002', tanggal: new Date().toISOString().split('T')[0], jam: '07:20:00', status: 'HADIR', keterangan: '' },
+  { idsiswa: 'MH-003', tanggal: new Date().toISOString().split('T')[0], jam: '07:45:00', status: 'TERLAMBAT', keterangan: 'Macet' },
 ];

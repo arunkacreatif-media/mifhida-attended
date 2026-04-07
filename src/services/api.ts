@@ -43,27 +43,38 @@ class ApiService {
     }, 30000);
 
     try {
-      console.log('Menghubungkan ke Spreadsheet...', GAS_URL);
+      // Tambahkan timestamp untuk menghindari cache browser
+      const ts = Date.now();
+      console.log('Menghubungkan ke Spreadsheet (Sync)...');
       
-      const fetchSiswa = fetch(`${GAS_URL}?action=getSiswa`, { signal: controller.signal, redirect: 'follow' });
-      const fetchAbsensi = fetch(`${GAS_URL}?action=getAbsensi`, { signal: controller.signal, redirect: 'follow' });
-      const fetchUsers = fetch(`${GAS_URL}?action=getUsers`, { signal: controller.signal, redirect: 'follow' });
+      const fetchSiswa = fetch(`${GAS_URL}?action=getSiswa&_t=${ts}`, { signal: controller.signal, redirect: 'follow' });
+      const fetchAbsensi = fetch(`${GAS_URL}?action=getAbsensi&_t=${ts}`, { signal: controller.signal, redirect: 'follow' });
+      const fetchUsers = fetch(`${GAS_URL}?action=getUsers&_t=${ts}`, { signal: controller.signal, redirect: 'follow' });
 
       const [siswaRes, absensiRes, usersRes] = await Promise.all([fetchSiswa, fetchAbsensi, fetchUsers]);
 
       if (siswaRes.ok) {
         const siswaData = await siswaRes.json();
-        if (Array.isArray(siswaData)) this.siswa = this.normalizeData(siswaData);
+        if (Array.isArray(siswaData)) {
+          this.siswa = this.normalizeData(siswaData);
+          localStorage.setItem('MH_SISWA', JSON.stringify(this.siswa));
+        }
       }
 
       if (absensiRes.ok) {
         const absensiData = await absensiRes.json();
-        if (Array.isArray(absensiData)) this.absensi = this.normalizeData(absensiData);
+        if (Array.isArray(absensiData)) {
+          this.absensi = this.normalizeData(absensiData);
+          localStorage.setItem('MH_ABSENSI', JSON.stringify(this.absensi));
+        }
       }
 
       if (usersRes.ok) {
         const usersData = await usersRes.json();
-        if (Array.isArray(usersData)) this.users = this.normalizeData(usersData);
+        if (Array.isArray(usersData)) {
+          this.users = this.normalizeData(usersData);
+          localStorage.setItem('MH_USERS', JSON.stringify(this.users));
+        }
       }
       
       this.lastFetchTime = Date.now();
@@ -85,9 +96,12 @@ class ApiService {
     return data.map(item => {
       const normalized: any = {};
       for (const key in item) {
-        // Normalize key to lowercase and handle potential spaces
-        const normalizedKey = key.toLowerCase().trim();
-        normalized[normalizedKey] = item[key];
+        // Hapus spasi dari kunci (misal "ID Siswa" -> "idsiswa")
+        const normalizedKey = key.toLowerCase().replace(/\s+/g, '');
+        let value = item[key];
+        // Trim string values to avoid comparison issues
+        if (typeof value === 'string') value = value.trim();
+        normalized[normalizedKey] = value;
       }
       return normalized;
     });
@@ -209,15 +223,15 @@ class ApiService {
     if (!siswa) return { success: false, message: 'Siswa tidak ditemukan' };
 
     const today = new Date().toISOString().split('T')[0];
-    const alreadyAbsen = this.absensi.find(a => a.idSiswa === idSiswa && a.tanggal === today);
+    const alreadyAbsen = this.absensi.find(a => (a.idsiswa) === idSiswa && a.tanggal === today);
     if (alreadyAbsen) return { success: false, message: 'Sudah absen hari ini' };
 
     const now = new Date();
     const jam = now.toLocaleTimeString('id-ID');
-    const newAbsensi = { idSiswa, tanggal: today, jam, status, keterangan };
+    const newAbsensi = { idsiswa: idSiswa, tanggal: today, jam, status, keterangan };
     
     if (GAS_URL) {
-      const res = await this.postToGAS('submitAbsensi', newAbsensi);
+      const res = await this.postToGAS('submitAbsensi', { idSiswa, tanggal: today, jam, status, keterangan });
       if (!res.success) return res;
     }
 
@@ -236,21 +250,59 @@ class ApiService {
     };
   }
 
+  private formatDate(dateInput: any): string {
+    if (!dateInput) return '';
+    const str = dateInput.toString().trim();
+    if (!str) return '';
+
+    // 1. Handle ISO format (2026-04-07T...)
+    if (/^\d{4}-\d{2}-\d{2}/.test(str)) {
+      return str.split('T')[0];
+    }
+
+    // 2. Handle DD/MM/YYYY or DD-MM-YYYY
+    const ddmmyyyy = str.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})/);
+    if (ddmmyyyy) {
+      return `${ddmmyyyy[3]}-${ddmmyyyy[2].padStart(2, '0')}-${ddmmyyyy[1].padStart(2, '0')}`;
+    }
+
+    // 3. Handle MM/DD/YYYY (common in some locales)
+    const mmddyyyy = str.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})/);
+    // Note: This is ambiguous with DD/MM/YYYY. Usually, if first part > 12, it's DD.
+    // But let's try standard JS Date parsing as fallback
+    const d = new Date(str);
+    if (!isNaN(d.getTime())) {
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    }
+
+    return str;
+  }
+
   async getDashboardStats(user: any, force = false) {
     if (GAS_URL) await this.fetchFromGAS(force);
     
-    // Gunakan tanggal lokal untuk "hari ini" agar sinkron dengan input absensi
     const now = new Date();
-    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
     
     const filteredSiswa = this.filterByRole(this.siswa, user);
-    const absensiToday = this.absensi.filter(a => a.tanggal === today);
     
-    const relevantAbsensi = absensiToday.filter(a => filteredSiswa.some(s => s.id === a.idSiswa));
+    // Filter absensi hari ini dengan normalisasi tanggal yang sangat kuat
+    const absensiToday = this.absensi.filter(a => {
+      const normalizedDate = this.formatDate(a.tanggal);
+      return normalizedDate === todayStr;
+    });
     
-    const hadirToday = relevantAbsensi.filter(a => (a.status || '').toString().toUpperCase() === 'HADIR').length;
-    const terlambatToday = relevantAbsensi.filter(a => (a.status || '').toString().toUpperCase() === 'TERLAMBAT').length;
+    // Gunakan ID yang sudah di-trim dan uppercase untuk perbandingan
+    const relevantAbsensi = absensiToday.filter(a => {
+      const aId = (a.idsiswa || '').toString().trim().toUpperCase();
+      return filteredSiswa.some(s => s.id.toString().trim().toUpperCase() === aId);
+    });
+    
+    const hadirToday = relevantAbsensi.filter(a => (a.status || '').toString().toUpperCase().trim() === 'HADIR').length;
+    const terlambatToday = relevantAbsensi.filter(a => (a.status || '').toString().toUpperCase().trim() === 'TERLAMBAT').length;
     const totalSiswa = filteredSiswa.length;
+
+    console.log(`Stats Sync Debug: Today=${todayStr}, Found Absensi Today=${absensiToday.length}, Relevant=${relevantAbsensi.length}`);
 
     return {
       totalSiswa,
@@ -265,9 +317,13 @@ class ApiService {
     const filteredSiswa = this.filterByRole(this.siswa, user);
     
     return this.absensi
-      .filter(log => filteredSiswa.some(s => s.id === log.idSiswa))
+      .filter(log => {
+        const id = (log.idsiswa || '').toString().trim().toUpperCase();
+        return filteredSiswa.some(s => s.id.toString().trim().toUpperCase() === id);
+      })
       .map(log => {
-        const s = this.siswa.find(siswa => siswa.id === log.idSiswa);
+        const id = (log.idsiswa || '').toString().trim().toUpperCase();
+        const s = this.siswa.find(siswa => siswa.id.toString().trim().toUpperCase() === id);
         return {
           ...log,
           nama: s ? s.nama : 'Tidak Dikenal',
