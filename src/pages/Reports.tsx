@@ -43,7 +43,7 @@ export default function Reports({ user }: { user: any }) {
   const fetchData = async () => {
     setLoading(true);
     const [logsData, studentsData] = await Promise.all([
-      api.getAbsensiLogs(user),
+      api.getAbsensiLogs(user, true), // Force fetch to ensure latest data
       api.getSiswa(user)
     ]);
     setLogs(logsData);
@@ -54,17 +54,19 @@ export default function Reports({ user }: { user: any }) {
   const allKelas = Object.values(KELAS).flat();
 
   const filteredLogs = logs.filter(log => {
-    const idSiswa = (log.idsiswa || '').toString();
+    const idSiswa = api.normalizeId(log.idsiswa);
     const nama = (log.nama || '').toString();
+    const status = (log.status || '').toString().toUpperCase();
     
     const matchesSearch = idSiswa.toLowerCase().includes(searchTerm.toLowerCase()) || 
                           nama.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = filterStatus === 'ALL' || log.status === filterStatus;
+    const matchesStatus = filterStatus === 'ALL' || status === filterStatus.toUpperCase();
     const matchesKelas = filterKelas === 'ALL' || log.kelas === filterKelas;
     
+    const normalizedLogDate = api.formatDate(log.tanggal);
     const matchesTime = reportType === 'DAILY' 
-      ? log.tanggal === filterDate 
-      : log.tanggal.startsWith(filterMonth);
+      ? normalizedLogDate === filterDate 
+      : normalizedLogDate.startsWith(filterMonth);
 
     return matchesSearch && matchesStatus && matchesKelas && matchesTime;
   });
@@ -73,16 +75,25 @@ export default function Reports({ user }: { user: any }) {
   const monthlySummary = students
     .filter(s => filterKelas === 'ALL' || s.kelas === filterKelas)
     .map(s => {
-      const studentLogs = logs.filter(l => l.idsiswa === s.id && l.tanggal.startsWith(filterMonth));
+      const sId = api.normalizeId(s.id);
+      const studentLogs = logs.filter(l => {
+        const lId = api.normalizeId(l.idsiswa);
+        const lDate = api.formatDate(l.tanggal);
+        return lId === sId && lDate.startsWith(filterMonth);
+      });
+      
+      const getCount = (status: string) => 
+        studentLogs.filter(l => (l.status || '').toString().toUpperCase() === status).length;
+
       return {
         id: s.id,
         nama: s.nama,
         kelas: s.kelas,
-        hadir: studentLogs.filter(l => l.status === 'HADIR').length,
-        terlambat: studentLogs.filter(l => l.status === 'TERLAMBAT').length,
-        sakit: studentLogs.filter(l => l.status === 'SAKIT').length,
-        izin: studentLogs.filter(l => l.status === 'IZIN').length,
-        alfa: studentLogs.filter(l => l.status === 'ALFA').length,
+        hadir: getCount('HADIR'),
+        terlambat: getCount('TERLAMBAT'),
+        sakit: getCount('SAKIT'),
+        izin: getCount('IZIN'),
+        alfa: getCount('ALFA'),
       };
     });
 
@@ -242,11 +253,11 @@ export default function Reports({ user }: { user: any }) {
 
       {/* Stats Summary */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-        <StatSummaryCard icon={CheckCircle} label="Hadir" value={filteredLogs.filter(l => l.status === 'HADIR').length} color="bg-emerald-500" textColor="text-emerald-800" bgColor="bg-emerald-50" />
-        <StatSummaryCard icon={Clock} label="Terlambat" value={filteredLogs.filter(l => l.status === 'TERLAMBAT').length} color="bg-amber-500" textColor="text-amber-800" bgColor="bg-amber-50" />
-        <StatSummaryCard icon={FileText} label="Sakit" value={filteredLogs.filter(l => l.status === 'SAKIT').length} color="bg-blue-500" textColor="text-blue-800" bgColor="bg-blue-50" />
-        <StatSummaryCard icon={Filter} label="Izin" value={filteredLogs.filter(l => l.status === 'IZIN').length} color="bg-purple-500" textColor="text-purple-800" bgColor="bg-purple-50" />
-        <StatSummaryCard icon={XCircle} label="Alfa" value={filteredLogs.filter(l => l.status === 'ALFA').length} color="bg-red-500" textColor="text-red-800" bgColor="bg-red-50" />
+        <StatSummaryCard icon={CheckCircle} label="Hadir" value={filteredLogs.filter(l => (l.status || '').toString().toUpperCase() === 'HADIR').length} color="bg-emerald-500" textColor="text-emerald-800" bgColor="bg-emerald-50" />
+        <StatSummaryCard icon={Clock} label="Terlambat" value={filteredLogs.filter(l => (l.status || '').toString().toUpperCase() === 'TERLAMBAT').length} color="bg-amber-500" textColor="text-amber-800" bgColor="bg-amber-50" />
+        <StatSummaryCard icon={FileText} label="Sakit" value={filteredLogs.filter(l => (l.status || '').toString().toUpperCase() === 'SAKIT').length} color="bg-blue-500" textColor="text-blue-800" bgColor="bg-blue-50" />
+        <StatSummaryCard icon={Filter} label="Izin" value={filteredLogs.filter(l => (l.status || '').toString().toUpperCase() === 'IZIN').length} color="bg-purple-500" textColor="text-purple-800" bgColor="bg-purple-50" />
+        <StatSummaryCard icon={XCircle} label="Alfa" value={filteredLogs.filter(l => (l.status || '').toString().toUpperCase() === 'ALFA').length} color="bg-red-500" textColor="text-red-800" bgColor="bg-red-50" />
       </div>
 
       {/* Table Section */}

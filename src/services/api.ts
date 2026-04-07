@@ -236,15 +236,21 @@ class ApiService {
   }
 
   async submitAbsensi(idSiswa, status, keterangan = '') {
-    const siswa = this.siswa.find(s => s.id === idSiswa);
+    const sId = this.normalizeId(idSiswa);
+    const siswa = this.siswa.find(s => this.normalizeId(s.id) === sId);
     if (!siswa) return { success: false, message: 'Siswa tidak ditemukan' };
 
-    const today = new Date().toISOString().split('T')[0];
-    const alreadyAbsen = this.absensi.find(a => (a.idsiswa) === idSiswa && a.tanggal === today);
+    const now = new Date();
+    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    
+    const alreadyAbsen = this.absensi.find(a => 
+      this.normalizeId(a.idsiswa) === sId && 
+      this.formatDate(a.tanggal) === today
+    );
+    
     if (alreadyAbsen) return { success: false, message: 'Sudah absen hari ini' };
 
-    const now = new Date();
-    const jam = now.toLocaleTimeString('id-ID');
+    const jam = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
     const newAbsensi = { idsiswa: idSiswa, tanggal: today, jam, status, keterangan };
     
     if (GAS_URL) {
@@ -267,7 +273,7 @@ class ApiService {
     };
   }
 
-  private formatDate(dateInput: any): string {
+  public formatDate(dateInput: any): string {
     if (!dateInput) return '';
     const str = dateInput.toString().trim();
     if (!str) return '';
@@ -294,11 +300,16 @@ class ApiService {
     return str;
   }
 
+  public normalizeId(id: any): string {
+    if (!id) return '';
+    return id.toString().trim().toUpperCase();
+  }
+
   private getEntityId(item: any): string {
     if (!item) return '';
     // Cek berbagai kemungkinan kunci ID (id, idsiswa, nim, dll)
     const id = item.id || item.idsiswa || '';
-    return id.toString().trim().toUpperCase();
+    return this.normalizeId(id);
   }
 
   async getDashboardStats(user: any, force = false) {
@@ -308,12 +319,11 @@ class ApiService {
     }
     
     const now = new Date();
-    // Gunakan format yang sama dengan spreadsheet (YYYY-MM-DD)
-    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    const todayStr = this.formatDate(now);
     
     const filteredSiswa = this.filterByRole(this.siswa, user);
     
-    // Filter absensi hari ini
+    // Filter absensi hari ini dengan normalisasi tanggal yang ketat
     const absensiToday = this.absensi.filter(a => {
       const normalizedDate = this.formatDate(a.tanggal);
       return normalizedDate === todayStr;
@@ -325,42 +335,60 @@ class ApiService {
       return filteredSiswa.some(s => this.getEntityId(s) === aId);
     });
     
-    const hadirToday = relevantAbsensi.filter(a => {
-      const status = (a.status || '').toString().toUpperCase().trim();
-      return status === 'HADIR';
-    }).length;
+    const getCount = (status: string) => 
+      relevantAbsensi.filter(a => (a.status || '').toString().toUpperCase().trim() === status).length;
 
-    const terlambatToday = relevantAbsensi.filter(a => {
-      const status = (a.status || '').toString().toUpperCase().trim();
-      return status === 'TERLAMBAT';
-    }).length;
-
-    const sakitToday = relevantAbsensi.filter(a => {
-      const status = (a.status || '').toString().toUpperCase().trim();
-      return status === 'SAKIT';
-    }).length;
-
-    const izinToday = relevantAbsensi.filter(a => {
-      const status = (a.status || '').toString().toUpperCase().trim();
-      return status === 'IZIN';
-    }).length;
-
-    const alfaToday = relevantAbsensi.filter(a => {
-      const status = (a.status || '').toString().toUpperCase().trim();
-      return status === 'ALFA';
-    }).length;
-
-    const totalSiswa = filteredSiswa.length;
-
-    return {
-      totalSiswa,
-      hadirToday,
-      terlambatToday,
-      sakitToday,
-      izinToday,
-      alfaToday,
-      tidakHadirToday: Math.max(0, totalSiswa - relevantAbsensi.length)
+    const stats = {
+      totalSiswa: filteredSiswa.length,
+      hadirToday: getCount('HADIR'),
+      terlambatToday: getCount('TERLAMBAT'),
+      sakitToday: getCount('SAKIT'),
+      izinToday: getCount('IZIN'),
+      alfaToday: getCount('ALFA'),
+      tidakHadirToday: Math.max(0, filteredSiswa.length - relevantAbsensi.length)
     };
+
+    console.log(`[DASHBOARD] Stats for ${todayStr}:`, stats);
+    return stats;
+  }
+
+  async getMonthlyDashboardStats(user: any, force = false) {
+    if (GAS_URL && force) {
+      await this.fetchFromGAS(true);
+    }
+    
+    const now = new Date();
+    const monthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    
+    const filteredSiswa = this.filterByRole(this.siswa, user);
+    
+    // Filter absensi bulan ini
+    const absensiMonth = this.absensi.filter(a => {
+      const normalizedDate = this.formatDate(a.tanggal);
+      return normalizedDate.startsWith(monthStr);
+    });
+    
+    // Pencocokan ID
+    const relevantAbsensi = absensiMonth.filter(a => {
+      const aId = this.getEntityId(a);
+      return filteredSiswa.some(s => this.getEntityId(s) === aId);
+    });
+    
+    const getCount = (status: string) => 
+      relevantAbsensi.filter(a => (a.status || '').toString().toUpperCase().trim() === status).length;
+
+    const stats = {
+      totalSiswa: filteredSiswa.length,
+      hadirMonth: getCount('HADIR'),
+      terlambatMonth: getCount('TERLAMBAT'),
+      sakitMonth: getCount('SAKIT'),
+      izinMonth: getCount('IZIN'),
+      alfaMonth: getCount('ALFA'),
+      monthName: now.toLocaleString('id-ID', { month: 'long', year: 'numeric' })
+    };
+
+    console.log(`[DASHBOARD] Monthly Stats for ${monthStr}:`, stats);
+    return stats;
   }
 
   async getAbsensiLogs(user: any, force = false) {

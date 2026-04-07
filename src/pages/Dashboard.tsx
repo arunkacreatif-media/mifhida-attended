@@ -28,7 +28,7 @@ export default function Dashboard({ user, onNavigate }: { user: any, onNavigate:
     
     try {
       // Selalu force fetch saat di Dashboard untuk memastikan data paling update
-      const data = await api.getDashboardStats(user, true);
+      const data = await api.getMonthlyDashboardStats(user, true);
       setStats(data);
     } catch (error) {
       console.error("Error fetching stats:", error);
@@ -41,10 +41,10 @@ export default function Dashboard({ user, onNavigate }: { user: any, onNavigate:
   useEffect(() => {
     fetchStats();
     
-    // Auto-refresh setiap 30 detik untuk menjaga data tetap "real-time"
+    // Auto-refresh setiap 1 menit untuk menjaga data tetap "real-time"
     const interval = setInterval(() => {
       fetchStats(false); // Refresh di background tanpa loading spinner
-    }, 30000);
+    }, 60000);
     
     return () => clearInterval(interval);
   }, [user]);
@@ -81,6 +81,10 @@ export default function Dashboard({ user, onNavigate }: { user: any, onNavigate:
         <div className="absolute -right-10 -bottom-10 w-48 h-48 bg-white/10 rounded-full blur-3xl"></div>
       </div>
 
+      <div className="flex items-center justify-between px-2">
+        <h3 className="font-black text-gray-800 text-sm uppercase tracking-widest">Rekap {stats.monthName}</h3>
+      </div>
+
       <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
         <StatCard 
           label="Total Siswa" 
@@ -91,38 +95,38 @@ export default function Dashboard({ user, onNavigate }: { user: any, onNavigate:
         />
         <StatCard 
           label="Hadir" 
-          value={stats.hadirToday} 
+          value={stats.hadirMonth} 
           icon={CheckCircle} 
           color="bg-emerald-50 text-emerald-600" 
           subLabel="Tepat Waktu"
         />
         <StatCard 
           label="Terlambat" 
-          value={stats.terlambatToday} 
+          value={stats.terlambatMonth} 
           icon={Clock} 
           color="bg-orange-50 text-orange-600" 
-          subLabel="Hari ini"
+          subLabel="Bulan Ini"
         />
         <StatCard 
-          label="Sakit/Izin" 
-          value={stats.sakitToday + stats.izinToday} 
+          label="Sakit" 
+          value={stats.sakitMonth} 
+          icon={FileText} 
+          color="bg-blue-50 text-blue-600" 
+          subLabel="Bulan Ini"
+        />
+        <StatCard 
+          label="Izin" 
+          value={stats.izinMonth} 
           icon={FileText} 
           color="bg-purple-50 text-purple-600" 
-          subLabel="Berhalangan"
+          subLabel="Bulan Ini"
         />
         <StatCard 
           label="Alfa" 
-          value={stats.alfaToday} 
+          value={stats.alfaMonth} 
           icon={AlertCircle} 
           color="bg-red-50 text-red-600" 
           subLabel="Tanpa Ket."
-        />
-        <StatCard 
-          label="Belum Absen" 
-          value={stats.tidakHadirToday} 
-          icon={AlertCircle} 
-          color="bg-gray-50 text-gray-600" 
-          subLabel="Sisa Siswa"
         />
       </div>
 
