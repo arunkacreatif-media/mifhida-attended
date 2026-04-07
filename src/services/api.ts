@@ -9,14 +9,20 @@ import { UserRole } from '../lib/constants';
 const GAS_URL = import.meta.env.VITE_GAS_URL;
 
 class ApiService {
-  private users = [...INITIAL_USERS];
-  private siswa = [...INITIAL_SISWA];
-  private absensi = [...INITIAL_ABSENSI];
+  private users: any[] = [];
+  private siswa: any[] = [];
+  private absensi: any[] = [];
   private isFetching = false;
   private lastFetchTime = 0;
-  private FETCH_COOLDOWN = 5000; // 5 detik cooldown antar fetch
+  private FETCH_COOLDOWN = 2000; // 2 detik cooldown
 
   constructor() {
+    // Jika tidak ada GAS_URL, gunakan data dummy
+    if (!GAS_URL) {
+      this.users = [...INITIAL_USERS];
+      this.siswa = [...INITIAL_SISWA];
+      this.absensi = [...INITIAL_ABSENSI];
+    }
     this.init();
   }
 
@@ -31,58 +37,69 @@ class ApiService {
   private async fetchFromGAS(force = false) {
     if (this.isFetching) return;
     
+    if (!GAS_URL || !GAS_URL.startsWith('https://script.google.com')) {
+      console.warn('GAS_URL tidak valid atau belum dikonfigurasi. Menggunakan data lokal.');
+      this.loadFromLocalStorage();
+      return;
+    }
+
     // Jangan fetch terlalu sering (cooldown), kecuali dipaksa (force)
     const now = Date.now();
     if (!force && (now - this.lastFetchTime < this.FETCH_COOLDOWN)) return;
 
     this.isFetching = true;
     const controller = new AbortController();
+    // Tingkatkan timeout ke 60 detik karena GAS bisa sangat lambat
     const timeoutId = setTimeout(() => {
       controller.abort();
-      console.warn('Koneksi ke Google Apps Script timeout (30 detik).');
-    }, 30000);
+    }, 60000);
 
     try {
-      // Tambahkan timestamp untuk menghindari cache browser
       const ts = Date.now();
-      console.log('Menghubungkan ke Spreadsheet (Sync)...');
+      console.log('Sinkronisasi data dengan Spreadsheet...');
       
-      const fetchSiswa = fetch(`${GAS_URL}?action=getSiswa&_t=${ts}`, { signal: controller.signal, redirect: 'follow' });
-      const fetchAbsensi = fetch(`${GAS_URL}?action=getAbsensi&_t=${ts}`, { signal: controller.signal, redirect: 'follow' });
-      const fetchUsers = fetch(`${GAS_URL}?action=getUsers&_t=${ts}`, { signal: controller.signal, redirect: 'follow' });
-
-      const [siswaRes, absensiRes, usersRes] = await Promise.all([fetchSiswa, fetchAbsensi, fetchUsers]);
-
+      // Sequential fetch untuk menghindari limit eksekusi konkuren di GAS
+      // Ini lebih lambat tapi lebih stabil untuk koneksi yang tidak menentu
+      
+      const siswaRes = await fetch(`${GAS_URL}?action=getSiswa&_t=${ts}`, { signal: controller.signal, redirect: 'follow' });
       if (siswaRes.ok) {
-        const siswaData = await siswaRes.json();
-        if (Array.isArray(siswaData)) {
-          this.siswa = this.normalizeData(siswaData);
+        const data = await siswaRes.json();
+        if (Array.isArray(data)) {
+          this.siswa = this.normalizeData(data);
           localStorage.setItem('MH_SISWA', JSON.stringify(this.siswa));
         }
       }
 
+      // Beri jeda sedikit antar request agar GAS tidak overload
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      const absensiRes = await fetch(`${GAS_URL}?action=getAbsensi&_t=${ts}`, { signal: controller.signal, redirect: 'follow' });
       if (absensiRes.ok) {
-        const absensiData = await absensiRes.json();
-        if (Array.isArray(absensiData)) {
-          this.absensi = this.normalizeData(absensiData);
+        const data = await absensiRes.json();
+        if (Array.isArray(data)) {
+          this.absensi = this.normalizeData(data);
           localStorage.setItem('MH_ABSENSI', JSON.stringify(this.absensi));
         }
       }
 
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      const usersRes = await fetch(`${GAS_URL}?action=getUsers&_t=${ts}`, { signal: controller.signal, redirect: 'follow' });
       if (usersRes.ok) {
-        const usersData = await usersRes.json();
-        if (Array.isArray(usersData)) {
-          this.users = this.normalizeData(usersData);
+        const data = await usersRes.json();
+        if (Array.isArray(data)) {
+          this.users = this.normalizeData(data);
           localStorage.setItem('MH_USERS', JSON.stringify(this.users));
         }
       }
       
       this.lastFetchTime = Date.now();
+      console.log('Sinkronisasi berhasil.');
     } catch (err: any) {
       if (err.name === 'AbortError') {
-        console.error('Gagal memuat data: Waktu koneksi habis (Timeout).');
+        console.error('Koneksi ke Spreadsheet terputus: Waktu habis (Timeout 60s).');
       } else {
-        console.error('Gagal memuat data dari Spreadsheet:', err.message);
+        console.error('Kesalahan koneksi Spreadsheet:', err.message);
       }
       this.loadFromLocalStorage();
     } finally {
@@ -280,14 +297,18 @@ class ApiService {
   private getEntityId(item: any): string {
     if (!item) return '';
     // Cek berbagai kemungkinan kunci ID (id, idsiswa, nim, dll)
-    const id = item.id || item.idsiswa || item.idsiswa || '';
+    const id = item.id || item.idsiswa || '';
     return id.toString().trim().toUpperCase();
   }
 
   async getDashboardStats(user: any, force = false) {
-    if (GAS_URL) await this.fetchFromGAS(force);
+    // Pastikan data terbaru diambil jika force=true
+    if (GAS_URL && force) {
+      await this.fetchFromGAS(true);
+    }
     
     const now = new Date();
+    // Gunakan format yang sama dengan spreadsheet (YYYY-MM-DD)
     const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
     
     const filteredSiswa = this.filterByRole(this.siswa, user);
@@ -298,26 +319,47 @@ class ApiService {
       return normalizedDate === todayStr;
     });
     
-    // Pencocokan ID yang sangat fleksibel
+    // Pencocokan ID yang sangat fleksibel antara absensi dan siswa
     const relevantAbsensi = absensiToday.filter(a => {
       const aId = this.getEntityId(a);
       return filteredSiswa.some(s => this.getEntityId(s) === aId);
     });
     
-    const hadirToday = relevantAbsensi.filter(a => (a.status || '').toString().toUpperCase().trim() === 'HADIR').length;
-    const terlambatToday = relevantAbsensi.filter(a => (a.status || '').toString().toUpperCase().trim() === 'TERLAMBAT').length;
-    const totalSiswa = filteredSiswa.length;
+    const hadirToday = relevantAbsensi.filter(a => {
+      const status = (a.status || '').toString().toUpperCase().trim();
+      return status === 'HADIR';
+    }).length;
 
-    console.log(`[DEBUG] Today: ${todayStr}`);
-    console.log(`[DEBUG] Total Siswa: ${totalSiswa}`);
-    console.log(`[DEBUG] Absensi Today Found: ${absensiToday.length}`);
-    console.log(`[DEBUG] Relevant Absensi: ${relevantAbsensi.length}`);
+    const terlambatToday = relevantAbsensi.filter(a => {
+      const status = (a.status || '').toString().toUpperCase().trim();
+      return status === 'TERLAMBAT';
+    }).length;
+
+    const sakitToday = relevantAbsensi.filter(a => {
+      const status = (a.status || '').toString().toUpperCase().trim();
+      return status === 'SAKIT';
+    }).length;
+
+    const izinToday = relevantAbsensi.filter(a => {
+      const status = (a.status || '').toString().toUpperCase().trim();
+      return status === 'IZIN';
+    }).length;
+
+    const alfaToday = relevantAbsensi.filter(a => {
+      const status = (a.status || '').toString().toUpperCase().trim();
+      return status === 'ALFA';
+    }).length;
+
+    const totalSiswa = filteredSiswa.length;
 
     return {
       totalSiswa,
       hadirToday,
       terlambatToday,
-      tidakHadirToday: Math.max(0, totalSiswa - (hadirToday + terlambatToday))
+      sakitToday,
+      izinToday,
+      alfaToday,
+      tidakHadirToday: Math.max(0, totalSiswa - relevantAbsensi.length)
     };
   }
 

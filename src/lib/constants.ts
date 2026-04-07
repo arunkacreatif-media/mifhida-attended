@@ -30,7 +30,14 @@ export const KELAS = {
   SD: ['1', '2', '3', '4', '5', '6'],
 };
 
+export const ATTENDANCE_RULES = {
+  START_TIME: '06:00',
+  LATE_TIME: '07:15',
+  END_TIME: '08:30',
+};
+
 export const ATTENDANCE_STATUS = {
+  AUTO: 'AUTO',
   HADIR: 'HADIR',
   TERLAMBAT: 'TERLAMBAT',
   ALFA: 'ALFA',

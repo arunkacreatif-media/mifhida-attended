@@ -21,7 +21,7 @@ import {
 import { motion, AnimatePresence } from 'motion/react';
 import { Html5QrcodeScanner, Html5QrcodeScanType } from 'html5-qrcode';
 import { api } from '../services/api';
-import { ATTENDANCE_STATUS } from '../lib/constants';
+import { ATTENDANCE_STATUS, ATTENDANCE_RULES } from '../lib/constants';
 import Toast, { ToastType } from '../components/Toast';
 
 export default function Scanner({ user }: { user: any }) {
@@ -30,7 +30,7 @@ export default function Scanner({ user }: { user: any }) {
   const [logs, setLogs] = useState<any[]>([]);
   const [isScanning, setIsScanning] = useState(false);
   const [manualId, setManualId] = useState('');
-  const [attendanceStatus, setAttendanceStatus] = useState(ATTENDANCE_STATUS.HADIR);
+  const [attendanceStatus, setAttendanceStatus] = useState(ATTENDANCE_STATUS.AUTO);
   const [keterangan, setKeterangan] = useState('');
   const [autoSendWA, setAutoSendWA] = useState(false);
   const [toast, setToast] = useState<{ isVisible: boolean; message: string; type: ToastType }>({
@@ -167,15 +167,34 @@ export default function Scanner({ user }: { user: any }) {
     }
   };
 
+  const getAutoStatus = () => {
+    const now = new Date();
+    const currentTime = now.getHours() * 60 + now.getMinutes();
+    
+    const [lateH, lateM] = ATTENDANCE_RULES.LATE_TIME.split(':').map(Number);
+    const lateTime = lateH * 60 + lateM;
+    
+    const [endH, endM] = ATTENDANCE_RULES.END_TIME.split(':').map(Number);
+    const endTime = endH * 60 + endM;
+
+    if (currentTime > endTime) return ATTENDANCE_STATUS.ALFA;
+    if (currentTime > lateTime) return ATTENDANCE_STATUS.TERLAMBAT;
+    return ATTENDANCE_STATUS.HADIR;
+  };
+
   const handleAttendance = async (id: string) => {
     setError(null);
     try {
-      const result = await api.submitAbsensi(id, attendanceStatus, keterangan);
+      const finalStatus = attendanceStatus === ATTENDANCE_STATUS.AUTO ? getAutoStatus() : attendanceStatus;
+      const result = await api.submitAbsensi(id, finalStatus, keterangan);
       if (result.success) {
         playSuccessSound();
         setScanResult(result.data);
         showToast(`Data absensi ${result.data.nama} berhasil terkirim ke sistem`);
         fetchLogs(true);
+        
+        // Reset keterangan after manual entry
+        setKeterangan('');
         
         // Auto-send WA if enabled
         if (autoSendWA && result.data.wa) {
@@ -219,24 +238,34 @@ export default function Scanner({ user }: { user: any }) {
       {/* Scanner Section */}
       <div className="space-y-6">
         <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-100 flex flex-col items-center">
-          <div className="w-full flex items-center justify-between mb-8">
-            <h2 className="text-[18px] font-black text-gray-900 flex items-center gap-3">
-              <Scan className="text-emerald-600" />
-              Scan QR Code
-            </h2>
-            <div className="flex bg-gray-100 p-1 rounded-xl">
-              <button 
-                onClick={() => setAttendanceStatus(ATTENDANCE_STATUS.HADIR)}
-                className={`px-4 py-2 rounded-lg text-caption font-black transition-all ${attendanceStatus === ATTENDANCE_STATUS.HADIR ? 'bg-emerald-600 text-white shadow-md' : 'text-gray-500'}`}
-              >
-                HADIR
-              </button>
-              <button 
-                onClick={() => setAttendanceStatus(ATTENDANCE_STATUS.TERLAMBAT)}
-                className={`px-4 py-2 rounded-lg text-caption font-black transition-all ${attendanceStatus === ATTENDANCE_STATUS.TERLAMBAT ? 'bg-amber-600 text-white shadow-md' : 'text-gray-500'}`}
-              >
-                TERLAMBAT
-              </button>
+          <div className="w-full flex flex-col gap-4 mb-8">
+            <div className="flex items-center justify-between">
+              <h2 className="text-[18px] font-black text-gray-900 flex items-center gap-3">
+                <Scan className="text-emerald-600" />
+                Scan QR Code
+              </h2>
+              <div className="flex bg-gray-100 p-1 rounded-xl overflow-x-auto max-w-[250px] scrollbar-hide">
+                {Object.values(ATTENDANCE_STATUS).map((status) => (
+                  <button 
+                    key={status}
+                    onClick={() => setAttendanceStatus(status)}
+                    className={`px-3 py-1.5 rounded-lg text-[10px] font-black transition-all whitespace-nowrap ${attendanceStatus === status ? 'bg-emerald-600 text-white shadow-md' : 'text-gray-500'}`}
+                  >
+                    {status}
+                  </button>
+                ))}
+              </div>
+            </div>
+            
+            <div className="flex flex-col gap-2">
+              <label className="text-caption font-black text-gray-400 ml-1">Keterangan (Opsional)</label>
+              <input 
+                type="text"
+                value={keterangan}
+                onChange={(e) => setKeterangan(e.target.value)}
+                placeholder="Contoh: Sakit Flu, Izin Acara Keluarga..."
+                className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none text-body"
+              />
             </div>
           </div>
 

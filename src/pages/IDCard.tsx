@@ -136,9 +136,13 @@ export default function IDCard({ user }: { user: any }) {
   };
 
   const filteredStudents = students.filter(s => {
-    const matchesSearch = s.nama.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                         s.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         s.nisn?.toLowerCase().includes(searchTerm.toLowerCase());
+    const nama = (s.nama || '').toString();
+    const id = (s.id || '').toString();
+    const nisn = (s.nisn || '').toString();
+    
+    const matchesSearch = nama.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                         id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         nisn.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesJenjang = filterJenjang === 'ALL' || s.jenjang === filterJenjang;
     const matchesKelas = filterKelas === 'ALL' || s.kelas === filterKelas;
     return matchesSearch && matchesJenjang && matchesKelas;

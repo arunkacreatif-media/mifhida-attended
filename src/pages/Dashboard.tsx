@@ -81,7 +81,7 @@ export default function Dashboard({ user, onNavigate }: { user: any, onNavigate:
         <div className="absolute -right-10 -bottom-10 w-48 h-48 bg-white/10 rounded-full blur-3xl"></div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
         <StatCard 
           label="Total Siswa" 
           value={stats.totalSiswa} 
@@ -94,7 +94,7 @@ export default function Dashboard({ user, onNavigate }: { user: any, onNavigate:
           value={stats.hadirToday} 
           icon={CheckCircle} 
           color="bg-emerald-50 text-emerald-600" 
-          subLabel="Hari ini"
+          subLabel="Tepat Waktu"
         />
         <StatCard 
           label="Terlambat" 
@@ -104,11 +104,25 @@ export default function Dashboard({ user, onNavigate }: { user: any, onNavigate:
           subLabel="Hari ini"
         />
         <StatCard 
-          label="Absen" 
-          value={stats.tidakHadirToday} 
+          label="Sakit/Izin" 
+          value={stats.sakitToday + stats.izinToday} 
+          icon={FileText} 
+          color="bg-purple-50 text-purple-600" 
+          subLabel="Berhalangan"
+        />
+        <StatCard 
+          label="Alfa" 
+          value={stats.alfaToday} 
           icon={AlertCircle} 
           color="bg-red-50 text-red-600" 
-          subLabel="Belum absen"
+          subLabel="Tanpa Ket."
+        />
+        <StatCard 
+          label="Belum Absen" 
+          value={stats.tidakHadirToday} 
+          icon={AlertCircle} 
+          color="bg-gray-50 text-gray-600" 
+          subLabel="Sisa Siswa"
         />
       </div>
 
