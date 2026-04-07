@@ -255,9 +255,10 @@ class ApiService {
     const str = dateInput.toString().trim();
     if (!str) return '';
 
-    // 1. Handle ISO format (2026-04-07T...)
-    if (/^\d{4}-\d{2}-\d{2}/.test(str)) {
-      return str.split('T')[0];
+    // 1. Handle YYYY-MM-DD format (avoiding Date object timezone shifts)
+    const isoMatch = str.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (isoMatch) {
+      return `${isoMatch[1]}-${isoMatch[2]}-${isoMatch[3]}`;
     }
 
     // 2. Handle DD/MM/YYYY or DD-MM-YYYY
@@ -266,16 +267,21 @@ class ApiService {
       return `${ddmmyyyy[3]}-${ddmmyyyy[2].padStart(2, '0')}-${ddmmyyyy[1].padStart(2, '0')}`;
     }
 
-    // 3. Handle MM/DD/YYYY (common in some locales)
-    const mmddyyyy = str.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})/);
-    // Note: This is ambiguous with DD/MM/YYYY. Usually, if first part > 12, it's DD.
-    // But let's try standard JS Date parsing as fallback
+    // Fallback to standard parsing but be careful with timezone
     const d = new Date(str);
     if (!isNaN(d.getTime())) {
+      // Use local components to match browser's "today"
       return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
     }
 
     return str;
+  }
+
+  private getEntityId(item: any): string {
+    if (!item) return '';
+    // Cek berbagai kemungkinan kunci ID (id, idsiswa, nim, dll)
+    const id = item.id || item.idsiswa || item.idsiswa || '';
+    return id.toString().trim().toUpperCase();
   }
 
   async getDashboardStats(user: any, force = false) {
@@ -286,23 +292,26 @@ class ApiService {
     
     const filteredSiswa = this.filterByRole(this.siswa, user);
     
-    // Filter absensi hari ini dengan normalisasi tanggal yang sangat kuat
+    // Filter absensi hari ini
     const absensiToday = this.absensi.filter(a => {
       const normalizedDate = this.formatDate(a.tanggal);
       return normalizedDate === todayStr;
     });
     
-    // Gunakan ID yang sudah di-trim dan uppercase untuk perbandingan
+    // Pencocokan ID yang sangat fleksibel
     const relevantAbsensi = absensiToday.filter(a => {
-      const aId = (a.idsiswa || '').toString().trim().toUpperCase();
-      return filteredSiswa.some(s => s.id.toString().trim().toUpperCase() === aId);
+      const aId = this.getEntityId(a);
+      return filteredSiswa.some(s => this.getEntityId(s) === aId);
     });
     
     const hadirToday = relevantAbsensi.filter(a => (a.status || '').toString().toUpperCase().trim() === 'HADIR').length;
     const terlambatToday = relevantAbsensi.filter(a => (a.status || '').toString().toUpperCase().trim() === 'TERLAMBAT').length;
     const totalSiswa = filteredSiswa.length;
 
-    console.log(`Stats Sync Debug: Today=${todayStr}, Found Absensi Today=${absensiToday.length}, Relevant=${relevantAbsensi.length}`);
+    console.log(`[DEBUG] Today: ${todayStr}`);
+    console.log(`[DEBUG] Total Siswa: ${totalSiswa}`);
+    console.log(`[DEBUG] Absensi Today Found: ${absensiToday.length}`);
+    console.log(`[DEBUG] Relevant Absensi: ${relevantAbsensi.length}`);
 
     return {
       totalSiswa,
