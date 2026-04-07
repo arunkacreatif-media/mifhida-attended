@@ -38,6 +38,8 @@ export default function Scanner({ user }: { user: any }) {
     message: '',
     type: 'success'
   });
+  
+  const today = new Date().toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
   const scannerRef = useRef<any>(null);
 
   useEffect(() => {
@@ -58,17 +60,32 @@ export default function Scanner({ user }: { user: any }) {
     setToast({ isVisible: true, message, type });
   };
 
+  const cleanPhone = (phone: string) => {
+    if (!phone) return '';
+    // Hapus semua karakter non-digit
+    let cleaned = phone.toString().replace(/\D/g, '');
+    // Jika dimulai dengan 0, ganti dengan 62
+    if (cleaned.startsWith('0')) {
+      cleaned = '62' + cleaned.substring(1);
+    }
+    // Jika dimulai dengan 8 (tanpa kode negara), tambahkan 62
+    else if (cleaned.startsWith('8')) {
+      cleaned = '62' + cleaned;
+    }
+    return cleaned;
+  };
+
   const sendWhatsApp = (data: any) => {
-    if (!data.wa) {
+    const phone = cleanPhone(data.wa);
+    if (!phone) {
       showToast('Nomor WhatsApp wali tidak ditemukan', 'error');
       return;
     }
 
-    const statusText = data.status === 'HADIR' ? 'HADIR' : 'TERLAMBAT';
-    const message = `Assalamu'alaikum Bp/Ibu Wali Murid dari *${data.nama}*.\n\nKami menginformasikan bahwa putra/putri Anda telah melakukan absensi di sekolah pada:\n\n📅 Tanggal: *${new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}*\n⏰ Jam: *${data.jam}*\n✅ Status: *${statusText}*\n\nTerima kasih atas perhatiannya.\n*YPI Miftahul Hidayah*`;
+    const statusEmoji = data.status.toUpperCase() === 'HADIR' ? '✅' : '⏰';
+    const message = `*ABSENSI SISWA - YPI MH*\n\nAssalamu'alaikum Wr. Wb.\n\nMenginfokan bahwa ananda:\n👤 *${data.nama}*\n\nTelah melakukan absensi pada:\n📅 Hari/Tgl: ${today}\n⌚ Jam: ${data.jam}\n${statusEmoji} Status: *${data.status}*\n\nTerima kasih atas perhatiannya.\n\n_Pesan otomatis dari Sistem Absensi QR_`;
     
-    const encodedMessage = encodeURIComponent(message);
-    const waUrl = `https://wa.me/${data.wa}?text=${encodedMessage}`;
+    const waUrl = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
     window.open(waUrl, '_blank');
   };
 
