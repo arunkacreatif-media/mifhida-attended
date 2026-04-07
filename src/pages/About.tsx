@@ -77,19 +77,22 @@ export default function About() {
       >
         <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-50 rounded-full -translate-y-1/2 translate-x-1/2 opacity-50"></div>
         
-        <div className="relative z-10 flex flex-col md:flex-row items-center gap-10">
-          <div className="flex-shrink-0">
-            <div className="p-4 bg-white rounded-[2rem] shadow-lg border border-gray-100">
-              <img 
-                src={LOGOS.DEVELOPER} 
-                alt="Developer Logo" 
-                className="w-48 h-auto object-contain"
-                referrerPolicy="no-referrer"
-              />
-            </div>
-          </div>
+        <div className="relative z-10 flex flex-col items-center text-center space-y-6">
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="inline-block p-4 bg-white rounded-[2rem] shadow-xl mb-4"
+          >
+            <img 
+              src={LOGOS.DEVELOPER} 
+              alt="Developer Logo" 
+              className="w-32 h-32 object-contain"
+              referrerPolicy="no-referrer"
+            />
+          </motion.div>
           
-          <div className="flex-1 space-y-4 text-center md:text-left">
+          <div className="max-w-2xl space-y-4">
             <div className="inline-flex items-center gap-2 px-4 py-1 bg-emerald-100 text-emerald-700 rounded-full text-caption font-black uppercase tracking-widest">
               <Code size={14} />
               Developer Profile
@@ -100,9 +103,11 @@ export default function About() {
               digitalisasi pendidikan di Indonesia. Kami berfokus pada pengembangan solusi 
               perangkat lunak yang praktis, inovatif, dan berdampak positif bagi institusi pendidikan.
             </p>
-            <div className="pt-4 flex flex-wrap justify-center md:justify-start gap-4">
+            <div className="pt-4 flex flex-wrap justify-center gap-4">
               <a 
-                href="#" 
+                href="https://wa.me/6285150617732?text=assalamu%20alaikum%2C%20selamat%20datang%20di%20Arunika%20Kreatif%20Media%2C%20ada%20yang%20ingin%20dikomunikasikan%2C%20silahkan...." 
+                target="_blank"
+                rel="noopener noreferrer"
                 className="flex items-center gap-2 px-6 py-3 bg-emerald-800 text-white rounded-2xl font-bold hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-900/20"
               >
                 Hubungi Kami

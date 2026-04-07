@@ -94,7 +94,10 @@ export default function Scanner({ user }: { user: any }) {
               };
             },
             aspectRatio: 1.0,
-            supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA]
+            supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA],
+            videoConstraints: {
+              facingMode: "environment"
+            }
           },
           /* verbose= */ false
         );

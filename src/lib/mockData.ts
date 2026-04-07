@@ -6,6 +6,7 @@
 import { UserRole } from './constants';
 
 export const INITIAL_USERS = [
+  { email: 'arunkacreatif@gmail.com', password: 'admin123', role: UserRole.ADMIN, nama: 'Administrator Yayasan' },
   { email: 'admin@gmail.com', password: 'admin123', role: UserRole.ADMIN, nama: 'Administrator Yayasan' },
   { email: 'guru1@gmail.com', password: 'guru123', role: UserRole.WALI_KELAS, nama: 'Ustadzah Fatimah' },
   { email: 'guru2@gmail.com', password: 'guru123', role: UserRole.WALI_KELAS, nama: 'Ustadz Ahmad' },
@@ -13,8 +14,8 @@ export const INITIAL_USERS = [
 ];
 
 export const INITIAL_SISWA = [
-  { id: 'MH-001', nama: 'Ahmad Zaki', kelas: 'KB-A', jenjang: 'KB', wali: 'Bp. Ridwan', wa: '628123456789', foto: '', createdAt: new Date().toISOString() },
-  { id: 'MH-002', nama: 'Siti Aminah', kelas: 'TK-B', jenjang: 'TK', wali: 'Ibu Sarah', wa: '628123456790', foto: '', createdAt: new Date().toISOString() },
+  { id: 'MH-001', nama: 'Ahmad Zaki Al-Fatih', kelas: 'KB-A', jenjang: 'KB', wali: 'Bp. Ridwan', wa: '628123456789', foto: '', createdAt: new Date().toISOString() },
+  { id: 'MH-002', nama: 'Siti Aminah Zahra', kelas: 'TK-B', jenjang: 'TK', wali: 'Ibu Sarah', wa: '628123456790', foto: '', createdAt: new Date().toISOString() },
   { id: 'MH-003', nama: 'Fatih Al-Fatih', kelas: '1-A', jenjang: 'SD', wali: 'Bp. Usman', wa: '628123456791', foto: '', createdAt: new Date().toISOString() },
   { id: 'MH-004', nama: 'Aisyah Humaira', kelas: '2-B', jenjang: 'SD', wali: 'Ibu Khadijah', wa: '628123456792', foto: '', createdAt: new Date().toISOString() },
   { id: 'MH-005', nama: 'Hasan Basri', kelas: '3-A', jenjang: 'SD', wali: 'Bp. Ali', wa: '628123456793', foto: '', createdAt: new Date().toISOString() },

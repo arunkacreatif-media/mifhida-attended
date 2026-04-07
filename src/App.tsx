@@ -78,7 +78,7 @@ export default function App() {
       {/* Top App Bar */}
       <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6 shadow-sm z-30 shrink-0">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-emerald-800 rounded-lg flex items-center justify-center shadow-md overflow-hidden p-1">
+          <div className="w-9 h-9 bg-emerald-800 rounded-lg flex items-center justify-center shadow-md overflow-hidden p-1.5">
             <img 
               src={LOGOS.SCHOOL} 
               alt="Logo" 
@@ -86,7 +86,10 @@ export default function App() {
               referrerPolicy="no-referrer"
             />
           </div>
-          <h1 className="font-black text-[20px] text-emerald-900 leading-tight">MifHida</h1>
+          <div>
+            <h1 className="font-black text-[18px] text-emerald-900 leading-none">MifHida</h1>
+            <p className="text-[9px] text-emerald-600 font-bold uppercase tracking-[0.1em] mt-1">Digital Attendance System</p>
+          </div>
         </div>
 
         <div className="flex items-center gap-3">
@@ -116,7 +119,7 @@ export default function App() {
               exit={{ opacity: 0, x: -20 }}
               transition={{ duration: 0.2, ease: "easeOut" }}
             >
-              {activePage === 'dashboard' && <Dashboard user={user} />}
+              {activePage === 'dashboard' && <Dashboard user={user} onNavigate={setActivePage} />}
               {activePage === 'students' && <Students user={user} />}
               {activePage === 'scanner' && <Scanner user={user} />}
               {activePage === 'idcard' && <IDCard user={user} />}

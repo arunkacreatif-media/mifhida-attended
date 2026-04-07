@@ -12,6 +12,9 @@ class ApiService {
   private users = [...INITIAL_USERS];
   private siswa = [...INITIAL_SISWA];
   private absensi = [...INITIAL_ABSENSI];
+  private isFetching = false;
+  private lastFetchTime = 0;
+  private FETCH_COOLDOWN = 5000; // 5 detik cooldown antar fetch
 
   constructor() {
     this.init();
@@ -26,47 +29,68 @@ class ApiService {
   }
 
   private async fetchFromGAS() {
+    if (this.isFetching) return;
+    
+    // Jangan fetch terlalu sering (cooldown)
+    const now = Date.now();
+    if (now - this.lastFetchTime < this.FETCH_COOLDOWN) return;
+
+    this.isFetching = true;
     const controller = new AbortController();
     const timeoutId = setTimeout(() => {
       controller.abort();
-      console.warn('Koneksi ke Google Apps Script timeout (15 detik).');
-    }, 15000);
+      console.warn('Koneksi ke Google Apps Script timeout (30 detik).');
+    }, 30000);
 
     try {
       console.log('Menghubungkan ke Spreadsheet...', GAS_URL);
       
-      const siswaRes = await fetch(`${GAS_URL}?action=getSiswa`, { 
-        signal: controller.signal,
-        redirect: 'follow'
-      });
+      const fetchSiswa = fetch(`${GAS_URL}?action=getSiswa`, { signal: controller.signal, redirect: 'follow' });
+      const fetchAbsensi = fetch(`${GAS_URL}?action=getAbsensi`, { signal: controller.signal, redirect: 'follow' });
+      const fetchUsers = fetch(`${GAS_URL}?action=getUsers`, { signal: controller.signal, redirect: 'follow' });
+
+      const [siswaRes, absensiRes, usersRes] = await Promise.all([fetchSiswa, fetchAbsensi, fetchUsers]);
+
       if (siswaRes.ok) {
         const siswaData = await siswaRes.json();
-        if (Array.isArray(siswaData)) this.siswa = siswaData;
+        if (Array.isArray(siswaData)) this.siswa = this.normalizeData(siswaData);
       }
 
-      const absensiRes = await fetch(`${GAS_URL}?action=getAbsensi`, { 
-        signal: controller.signal,
-        redirect: 'follow'
-      });
       if (absensiRes.ok) {
         const absensiData = await absensiRes.json();
-        if (Array.isArray(absensiData)) this.absensi = absensiData;
+        if (Array.isArray(absensiData)) this.absensi = this.normalizeData(absensiData);
       }
 
-      const usersRes = await fetch(`${GAS_URL}?action=getUsers`, { 
-        signal: controller.signal,
-        redirect: 'follow'
-      });
       if (usersRes.ok) {
         const usersData = await usersRes.json();
-        if (Array.isArray(usersData)) this.users = usersData;
+        if (Array.isArray(usersData)) this.users = this.normalizeData(usersData);
       }
+      
+      this.lastFetchTime = Date.now();
     } catch (err: any) {
-      console.error('Gagal memuat data dari Spreadsheet:', err.message);
+      if (err.name === 'AbortError') {
+        console.error('Gagal memuat data: Waktu koneksi habis (Timeout).');
+      } else {
+        console.error('Gagal memuat data dari Spreadsheet:', err.message);
+      }
       this.loadFromLocalStorage();
     } finally {
       clearTimeout(timeoutId);
+      this.isFetching = false;
     }
+  }
+
+  private normalizeData(data: any[]) {
+    if (!Array.isArray(data)) return [];
+    return data.map(item => {
+      const normalized: any = {};
+      for (const key in item) {
+        // Normalize key to lowercase and handle potential spaces
+        const normalizedKey = key.toLowerCase().trim();
+        normalized[normalizedKey] = item[key];
+      }
+      return normalized;
+    });
   }
 
   private loadFromLocalStorage() {
@@ -125,8 +149,9 @@ class ApiService {
       return data;
     }
     return data.filter(item => {
-      const kelas = item.kelas || item.kelas_diampu;
-      return kelas === user.kelas_diampu;
+      const itemKelas = (item.kelas || item.kelas_diampu || '').toString().trim().toUpperCase();
+      const userKelas = (user.kelas_diampu || '').toString().trim().toUpperCase();
+      return itemKelas === userKelas;
     });
   }
 

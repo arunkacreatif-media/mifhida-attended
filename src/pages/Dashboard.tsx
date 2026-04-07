@@ -16,7 +16,7 @@ import {
 import { api } from '../services/api';
 import { UserRole } from '../lib/constants';
 
-export default function Dashboard({ user }: { user: any }) {
+export default function Dashboard({ user, onNavigate }: { user: any, onNavigate: (page: string) => void }) {
   const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
@@ -39,9 +39,9 @@ export default function Dashboard({ user }: { user: any }) {
     <div className="space-y-6">
       <div className="bg-emerald-800 rounded-[2.5rem] p-8 text-white shadow-xl relative overflow-hidden">
         <div className="relative z-10">
-          <h2 className="text-[18px] font-black mb-1">Assalamu'alaikum,</h2>
-          <p className="text-[20px] font-black text-gold">{user.nama}</p>
-          <div className="mt-4 inline-flex items-center gap-2 px-3 py-1 bg-white/20 rounded-full text-caption font-bold backdrop-blur-sm">
+          <h2 className="text-[16px] font-black mb-1 opacity-90">Assalamu'alaikum,</h2>
+          <p className="text-[18px] font-black text-gold leading-tight">{user.nama}</p>
+          <div className="mt-4 inline-flex items-center gap-2 px-3 py-1 bg-white/20 rounded-full text-[10px] font-bold backdrop-blur-sm">
             <div className="w-2 h-2 bg-gold rounded-full animate-pulse"></div>
             {user.role === UserRole.WALI_KELAS ? `Wali Kelas ${user.kelas_diampu}` : user.role.replace('_', ' ')}
           </div>
@@ -85,9 +85,9 @@ export default function Dashboard({ user }: { user: any }) {
           <h3 className="font-black text-gray-800">Aksi Cepat</h3>
         </div>
         <div className="grid grid-cols-3 gap-4">
-          <QuickAction icon={Camera} label="Scan" color="bg-emerald-800" />
-          <QuickAction icon={Users} label="Siswa" color="bg-blue-600" />
-          <QuickAction icon={FileText} label="Laporan" color="bg-purple-600" />
+          <QuickAction icon={Camera} label="Scan" color="bg-emerald-800" onClick={() => onNavigate('scanner')} />
+          <QuickAction icon={Users} label="Siswa" color="bg-blue-600" onClick={() => onNavigate('students')} />
+          <QuickAction icon={FileText} label="Laporan" color="bg-purple-600" onClick={() => onNavigate('reports')} />
         </div>
       </div>
     </div>
@@ -109,9 +109,12 @@ function StatCard({ label, value, icon: Icon, color, subLabel }: any) {
   );
 }
 
-function QuickAction({ icon: Icon, label, color }: any) {
+function QuickAction({ icon: Icon, label, color, onClick }: any) {
   return (
-    <button className="flex flex-col items-center gap-2 group">
+    <button 
+      onClick={onClick}
+      className="flex flex-col items-center gap-2 group"
+    >
       <div className={`w-14 h-14 ${color} text-white rounded-2xl flex items-center justify-center shadow-lg group-active:scale-90 transition-transform`}>
         <Icon size={24} />
       </div>

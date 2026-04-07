@@ -14,14 +14,15 @@ import {
   Users,
   School,
   Calendar,
-  MapPin
+  MapPin,
+  Printer
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 import { api } from '../services/api';
 import { JENJANG } from '../lib/constants';
 import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
+import { toPng } from 'html-to-image';
 
 // Ukuran kartu ID portrait (standar ID-1 diputar 90°)
 // Lebar 54mm x Tinggi 85.6mm
@@ -41,6 +42,7 @@ export default function IDCard({ user }: { user: any }) {
   const [filterKelas, setFilterKelas] = useState('ALL');
   const [selectedStudents, setSelectedStudents] = useState<string[]>([]);
   const [isExporting, setIsExporting] = useState(false);
+  const [notification, setNotification] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const cardRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
   const [availableClasses, setAvailableClasses] = useState<string[]>([]);
 
@@ -71,6 +73,11 @@ export default function IDCard({ user }: { user: any }) {
     }
   };
 
+  const handlePrint = () => {
+    if (selectedStudents.length === 0) return;
+    window.print();
+  };
+
   const exportToPDF = async () => {
     if (selectedStudents.length === 0) return;
     setIsExporting(true);
@@ -79,12 +86,12 @@ export default function IDCard({ user }: { user: any }) {
       const pdf = new jsPDF({
         unit: 'mm',
         format: 'a4',
-        orientation: 'portrait' // A4 portrait untuk kartu portrait
+        orientation: 'portrait'
       });
       
-      const cardsPerRow = 2;     // 2 kartu per baris
-      const cardsPerCol = 3;     // 3 kartu per kolom
-      const cardsPerPage = cardsPerRow * cardsPerCol; // 6 kartu per halaman
+      const cardsPerRow = 2;
+      const cardsPerCol = 3;
+      const cardsPerPage = cardsPerRow * cardsPerCol;
       
       const marginX = 20;
       const marginY = 15;
@@ -95,13 +102,12 @@ export default function IDCard({ user }: { user: any }) {
         const element = cardRefs.current[id];
         
         if (element) {
-          const canvas = await html2canvas(element, { 
-            scale: 3,
-            backgroundColor: '#ffffff',
-            useCORS: true
+          // html-to-image handles modern CSS (oklch) much better than html2canvas
+          const dataUrl = await toPng(element, { 
+            quality: 0.95,
+            pixelRatio: 3,
+            backgroundColor: '#ffffff'
           });
-          
-          const imgData = canvas.toDataURL('image/png');
           
           const row = Math.floor((i % cardsPerPage) / cardsPerRow);
           const col = (i % cardsPerPage) % cardsPerRow;
@@ -109,7 +115,7 @@ export default function IDCard({ user }: { user: any }) {
           const x = marginX + (col * (CARD_WIDTH_MM + cardSpacing));
           const y = marginY + (row * (CARD_HEIGHT_MM + cardSpacing));
           
-          pdf.addImage(imgData, 'PNG', x, y, CARD_WIDTH_MM, CARD_HEIGHT_MM);
+          pdf.addImage(dataUrl, 'PNG', x, y, CARD_WIDTH_MM, CARD_HEIGHT_MM);
           
           if ((i + 1) % cardsPerPage === 0 && i < selectedStudents.length - 1) {
             pdf.addPage();
@@ -118,8 +124,12 @@ export default function IDCard({ user }: { user: any }) {
       }
       
       pdf.save(`ID_Card_Siswa_${new Date().getTime()}.pdf`);
+      setNotification({ message: 'Berhasil mencetak PDF!', type: 'success' });
+      setTimeout(() => setNotification(null), 3000);
     } catch (err) {
       console.error('PDF Export Error:', err);
+      setNotification({ message: 'Gagal mencetak PDF. Silakan coba lagi.', type: 'error' });
+      setTimeout(() => setNotification(null), 3000);
     } finally {
       setIsExporting(false);
     }
@@ -142,7 +152,32 @@ export default function IDCard({ user }: { user: any }) {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-8">
-      <div className="max-w-7xl mx-auto space-y-8">
+      {/* Notification Toast */}
+      <AnimatePresence>
+        {notification && (
+          <motion.div
+            initial={{ opacity: 0, y: -50 }}
+            animate={{ opacity: 1, y: 20 }}
+            exit={{ opacity: 0, y: -50 }}
+            className="fixed top-0 left-1/2 -translate-x-1/2 z-[100] w-full max-w-md px-4"
+          >
+            <div className={`flex items-center gap-3 p-4 rounded-2xl shadow-xl border ${
+              notification.type === 'success' 
+                ? 'bg-emerald-50 border-emerald-100 text-emerald-800' 
+                : 'bg-red-50 border-red-100 text-red-800'
+            }`}>
+              {notification.type === 'success' ? (
+                <CheckCircle2 className="text-emerald-600" size={20} />
+              ) : (
+                <AlertCircle className="text-red-600" size={20} />
+              )}
+              <p className="font-bold">{notification.message}</p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <div className="max-w-7xl mx-auto space-y-8 no-print">
         {/* Header dan Filter (sama seperti sebelumnya, tidak berubah) */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
@@ -163,8 +198,12 @@ export default function IDCard({ user }: { user: any }) {
                 disabled={selectedStudents.length === 0 || isExporting}
                 className="flex items-center gap-2 px-6 py-2.5 bg-emerald-600 text-white rounded-xl font-medium hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-600/25 disabled:opacity-50"
               >
-                {isExporting ? <Loader2 className="animate-spin" size={20} /> : <FileDown size={20} />}
-                Cetak ({selectedStudents.length})
+                {isExporting ? (
+                  <Loader2 className="animate-spin" size={20} />
+                ) : (
+                  <Printer size={20} />
+                )}
+                <span>{isExporting ? 'Memproses...' : `Cetak (${selectedStudents.length})`}</span>
               </button>
             </div>
           </div>
@@ -259,20 +298,37 @@ export default function IDCard({ user }: { user: any }) {
                 {/* ID CARD - PORTRAIT VERSION */}
                 <div 
                   ref={el => cardRefs.current[siswa.id] = el}
-                  className="relative bg-white rounded-xl shadow-lg overflow-hidden cursor-pointer hover:shadow-xl transition-shadow"
-                  style={{ width: `${CARD_WIDTH_PX}px`, height: `${CARD_HEIGHT_PX}px` }}
+                  className="relative rounded-xl overflow-hidden cursor-pointer transition-shadow"
+                  style={{ 
+                    width: `${CARD_WIDTH_PX}px`, 
+                    height: `${CARD_HEIGHT_PX}px`,
+                    backgroundColor: '#ffffff',
+                    boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)' // shadow-lg equivalent
+                  }}
                 >
                   {/* Background Pattern */}
-                  <div className="absolute inset-0 opacity-5">
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500 rounded-full -mr-16 -mt-16"></div>
-                    <div className="absolute bottom-0 left-0 w-24 h-24 bg-emerald-500 rounded-full -ml-12 -mb-12"></div>
+                  <div className="absolute inset-0" style={{ opacity: 0.05 }}>
+                    <div 
+                      className="absolute top-0 right-0 w-32 h-32 rounded-full -mr-16 -mt-16"
+                      style={{ backgroundColor: '#10b981' }} // emerald-500
+                    ></div>
+                    <div 
+                      className="absolute bottom-0 left-0 w-24 h-24 rounded-full -ml-12 -mb-12"
+                      style={{ backgroundColor: '#10b981' }} // emerald-500
+                    ></div>
                   </div>
 
                   {/* Content - Vertical Layout */}
                   <div className="relative h-full flex flex-col">
                     {/* Header with School Logo */}
-                    <div className="bg-gradient-to-r from-emerald-700 to-emerald-600 px-3 py-3 flex items-center justify-center gap-2">
-                      <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center p-1.5 shadow-md">
+                    <div 
+                      className="px-3 py-3 flex items-center justify-center gap-2"
+                      style={{ backgroundColor: '#065f46' }} // emerald-800 equivalent
+                    >
+                      <div 
+                        className="w-10 h-10 bg-white rounded-lg flex items-center justify-center p-1.5"
+                        style={{ boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)' }} // shadow-md
+                      >
                         <img 
                           src={SCHOOL_LOGO}
                           alt="Logo YPI Miftahul Hidayah" 
@@ -282,25 +338,38 @@ export default function IDCard({ user }: { user: any }) {
                       </div>
                       <div className="text-white">
                         <h3 className="text-[10px] font-bold leading-tight tracking-wide">YPI MIFTAHUL HIDAYAH</h3>
-                        <p className="text-[8px] text-emerald-100 leading-tight font-medium">KARTU PRESENSI DIGITAL</p>
+                        <p className="text-[8px] leading-tight font-medium" style={{ color: '#d1fae5' }}>KARTU PRESENSI DIGITAL</p>
                       </div>
                     </div>
 
                     {/* Student Info - Top */}
                     <div className="text-center mt-4 px-3">
-                      <div className="inline-block px-3 py-0.5 bg-emerald-100 text-emerald-700 rounded-full text-[9px] font-bold mb-2">
+                      <div 
+                        className="inline-block px-3 py-0.5 rounded-full text-[9px] font-bold mb-2"
+                        style={{ backgroundColor: '#d1fae5', color: '#065f46' }}
+                      >
                         {siswa.jenjang}
                       </div>
-                      <h4 className="text-[13px] font-bold text-gray-900 leading-tight uppercase mb-1">{siswa.nama}</h4>
+                      <h4 className="text-[13px] font-bold leading-tight uppercase mb-1" style={{ color: '#111827' }}>{siswa.nama}</h4>
                       <div className="flex justify-center items-center gap-2">
-                        <span className="text-[8px] text-gray-400 uppercase font-bold">NIS:</span>
-                        <span className="text-[11px] font-black text-emerald-600 tracking-wider">{siswa.id}</span>
+                        <span className="text-[8px] uppercase font-bold" style={{ color: '#9ca3af' }}>NIS:</span>
+                        <span className="text-[11px] font-black tracking-wider" style={{ color: '#059669' }}>{siswa.id}</span>
+                      </div>
+                      <div className="flex justify-center items-center gap-2 mt-0.5">
+                        <span className="text-[8px] uppercase font-bold" style={{ color: '#9ca3af' }}>Kelas:</span>
+                        <span className="text-[10px] font-bold" style={{ color: '#374151' }}>{siswa.kelas || '-'}</span>
                       </div>
                     </div>
 
                     {/* LARGE QR Code Section - THE MAIN FOCUS */}
                     <div className="flex-1 flex flex-col items-center justify-center px-4 py-2">
-                      <div className="bg-white p-4 rounded-2xl border-2 border-emerald-100 shadow-xl transform hover:scale-105 transition-transform">
+                      <div 
+                        className="bg-white p-4 rounded-2xl border-2 transform hover:scale-105 transition-transform"
+                        style={{ 
+                          borderColor: '#d1fae5',
+                          boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)' // shadow-xl equivalent
+                        }}
+                      >
                         <QRCodeSVG 
                           value={siswa.id} 
                           size={110} 
@@ -310,31 +379,33 @@ export default function IDCard({ user }: { user: any }) {
                           includeMargin={false}
                         />
                       </div>
-                      <p className="mt-3 text-[8px] font-black text-emerald-800 uppercase tracking-[0.4em] opacity-50">Scan to Attend</p>
+                      <p className="mt-3 text-[8px] font-black uppercase tracking-[0.4em] opacity-50" style={{ color: '#064e3b' }}>Scan to Attend</p>
                     </div>
 
                     {/* Student Details - Bottom (Compact) */}
                     <div className="px-4 pb-3 space-y-1">
-                      <div className="flex justify-between border-b border-gray-50 pb-0.5">
-                        <span className="text-[7px] text-gray-400 uppercase font-bold">Kelas</span>
-                        <span className="text-[8px] font-bold text-gray-700">{siswa.kelas || '-'}</span>
-                      </div>
-                      <div className="flex justify-between border-b border-gray-50 pb-0.5">
-                        <span className="text-[7px] text-gray-400 uppercase font-bold">TTL</span>
-                        <span className="text-[8px] font-bold text-gray-700 truncate max-w-[100px]">
+                      <div 
+                        className="flex justify-between pb-0.5"
+                        style={{ borderBottom: '1px solid #f9fafb' }} // border-gray-50
+                      >
+                        <span className="text-[7px] uppercase font-bold" style={{ color: '#9ca3af' }}>TTL</span>
+                        <span className="text-[8px] font-bold truncate max-w-[100px]" style={{ color: '#374151' }}>
                           {siswa.tempat_lahir ? `${siswa.tempat_lahir}, ${siswa.tanggal_lahir}` : '-'}
                         </span>
                       </div>
                       {siswa.nisn && (
-                        <div className="flex justify-between border-b border-gray-50 pb-0.5">
-                          <span className="text-[7px] text-gray-400 uppercase font-bold">NISN</span>
-                          <span className="text-[8px] font-bold text-gray-700">{siswa.nisn}</span>
+                        <div 
+                          className="flex justify-between pb-0.5"
+                          style={{ borderBottom: '1px solid #f9fafb' }} // border-gray-50
+                        >
+                          <span className="text-[7px] uppercase font-bold" style={{ color: '#9ca3af' }}>NISN</span>
+                          <span className="text-[8px] font-bold" style={{ color: '#374151' }}>{siswa.nisn}</span>
                         </div>
                       )}
                     </div>
 
                     {/* Footer */}
-                    <div className="bg-emerald-600 py-1.5 px-3">
+                    <div className="py-1.5 px-3" style={{ backgroundColor: '#059669' }}>
                       <p className="text-[7px] text-center text-white font-bold uppercase tracking-widest">
                         Miftahul Hidayah Islamic School
                       </p>
@@ -342,7 +413,10 @@ export default function IDCard({ user }: { user: any }) {
                   </div>
 
                   {/* Border Accent */}
-                  <div className="absolute top-0 left-0 bottom-0 w-1 bg-gradient-to-b from-emerald-500 via-teal-500 to-emerald-500"></div>
+                  <div 
+                    className="absolute top-0 left-0 bottom-0 w-1"
+                    style={{ background: 'linear-gradient(to bottom, #10b981, #065f46, #10b981)' }}
+                  ></div>
                 </div>
               </motion.div>
             ))
@@ -350,7 +424,7 @@ export default function IDCard({ user }: { user: any }) {
         </div>
 
         {/* Info Section */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 no-print">
           <div className="flex items-start gap-4">
             <div className="p-3 bg-blue-50 rounded-xl shrink-0">
               <AlertCircle size={20} className="text-blue-600" />
@@ -360,12 +434,91 @@ export default function IDCard({ user }: { user: any }) {
               <ul className="text-body text-gray-600 space-y-1 list-disc ml-4">
                 <li>Klik pada kartu untuk memilih siswa yang akan dicetak</li>
                 <li>Gunakan tombol <strong>"Pilih Semua"</strong> untuk memilih semua siswa yang tampil</li>
-                <li>Klik <strong>"Cetak"</strong> untuk mengunduh file PDF ukuran kartu ID portrait (54mm x 86mm)</li>
-                <li>PDF akan disusun 2x3 kartu per halaman A4 Portrait</li>
-                <li>Rekomendasi kertas: <strong>Kertas PVC ID Card</strong> atau <strong>Art Paper 260gsm</strong></li>
-                <li>Logo sekolah menggunakan gambar resmi dari Cloudinary</li>
+                <li>Klik <strong>"Cetak"</strong> untuk membuka dialog cetak browser</li>
+                <li>Pada dialog cetak, pilih <strong>"Save as PDF"</strong> atau pilih printer Anda</li>
+                <li>Pastikan <strong>"Background Graphics"</strong> dicentang agar warna kartu muncul</li>
               </ul>
             </div>
+          </div>
+        </div>
+
+        {/* PRINT ONLY SECTION */}
+        <div className="hidden print:block print-section">
+          <div className="grid grid-cols-2 gap-4 p-4">
+            {students.filter(s => selectedStudents.includes(s.id)).map((siswa) => (
+              <div 
+                key={`print-${siswa.id}`}
+                className="relative rounded-xl overflow-hidden border border-gray-200"
+                style={{ 
+                  width: `${CARD_WIDTH_PX}px`, 
+                  height: `${CARD_HEIGHT_PX}px`,
+                  backgroundColor: '#ffffff',
+                  pageBreakInside: 'avoid',
+                  margin: '0 auto 20px auto'
+                }}
+              >
+                {/* Content - Vertical Layout */}
+                <div className="relative h-full flex flex-col">
+                  {/* Header with School Logo */}
+                  <div 
+                    className="px-3 py-3 flex items-center justify-center gap-2"
+                    style={{ backgroundColor: '#065f46' }}
+                  >
+                    <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center p-1.5">
+                      <img 
+                        src={SCHOOL_LOGO}
+                        alt="Logo" 
+                        className="w-full h-full object-contain"
+                        referrerPolicy="no-referrer"
+                      />
+                    </div>
+                    <div className="text-white">
+                      <h3 className="text-[10px] font-bold leading-tight">YPI MIFTAHUL HIDAYAH</h3>
+                      <p className="text-[8px] leading-tight font-medium" style={{ color: '#d1fae5' }}>KARTU PRESENSI DIGITAL</p>
+                    </div>
+                  </div>
+
+                  {/* Student Info */}
+                  <div className="text-center mt-4 px-3">
+                    <div 
+                      className="inline-block px-3 py-0.5 rounded-full text-[9px] font-bold mb-2"
+                      style={{ backgroundColor: '#d1fae5', color: '#065f46' }}
+                    >
+                      {siswa.jenjang}
+                    </div>
+                    <h4 className="text-[13px] font-bold leading-tight uppercase mb-1" style={{ color: '#111827' }}>{siswa.nama}</h4>
+                    <div className="flex justify-center items-center gap-2">
+                      <span className="text-[8px] uppercase font-bold" style={{ color: '#9ca3af' }}>NIS:</span>
+                      <span className="text-[11px] font-black tracking-wider" style={{ color: '#059669' }}>{siswa.id}</span>
+                    </div>
+                  </div>
+
+                  {/* QR Code */}
+                  <div className="flex-1 flex flex-col items-center justify-center px-4 py-2">
+                    <div 
+                      className="bg-white p-4 rounded-2xl border-2"
+                      style={{ borderColor: '#d1fae5' }}
+                    >
+                      <QRCodeSVG 
+                        value={siswa.id} 
+                        size={110} 
+                        level="H" 
+                        bgColor="#ffffff"
+                        fgColor="#059669"
+                        includeMargin={false}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Footer */}
+                  <div className="py-1.5 px-3" style={{ backgroundColor: '#059669' }}>
+                    <p className="text-[7px] text-center text-white font-bold uppercase tracking-widest">
+                      Miftahul Hidayah Islamic School
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </div>

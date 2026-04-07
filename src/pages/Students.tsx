@@ -114,8 +114,16 @@ export default function Students({ user }: { user: any }) {
   };
 
   const filteredStudents = students.filter(s => {
-    const matchesSearch = s.nama.toLowerCase().includes(searchTerm.toLowerCase()) || s.id.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesJenjang = filterJenjang === 'ALL' || s.jenjang === filterJenjang;
+    const name = s.nama || '';
+    const id = s.id || '';
+    const jenjang = s.jenjang || '';
+    
+    const matchesSearch = name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                          id.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesJenjang = filterJenjang === 'ALL' || 
+                           jenjang.toString().trim().toUpperCase() === filterJenjang.toUpperCase();
+    
     return matchesSearch && matchesJenjang;
   });
 
