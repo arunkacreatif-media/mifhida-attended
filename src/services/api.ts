@@ -28,12 +28,12 @@ class ApiService {
     }
   }
 
-  private async fetchFromGAS() {
+  private async fetchFromGAS(force = false) {
     if (this.isFetching) return;
     
-    // Jangan fetch terlalu sering (cooldown)
+    // Jangan fetch terlalu sering (cooldown), kecuali dipaksa (force)
     const now = Date.now();
-    if (now - this.lastFetchTime < this.FETCH_COOLDOWN) return;
+    if (!force && (now - this.lastFetchTime < this.FETCH_COOLDOWN)) return;
 
     this.isFetching = true;
     const controller = new AbortController();
@@ -135,7 +135,7 @@ class ApiService {
   }
 
   async login(email, password) {
-    if (GAS_URL) await this.fetchFromGAS();
+    if (GAS_URL) await this.fetchFromGAS(true);
     const user = this.users.find(u => u.email === email && u.password === password);
     if (user) {
       return { success: true, user: { ...user } };
@@ -236,28 +236,32 @@ class ApiService {
     };
   }
 
-  async getDashboardStats(user: any) {
-    if (GAS_URL) await this.fetchFromGAS();
-    const today = new Date().toISOString().split('T')[0];
+  async getDashboardStats(user: any, force = false) {
+    if (GAS_URL) await this.fetchFromGAS(force);
+    
+    // Gunakan tanggal lokal untuk "hari ini" agar sinkron dengan input absensi
+    const now = new Date();
+    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    
     const filteredSiswa = this.filterByRole(this.siswa, user);
     const absensiToday = this.absensi.filter(a => a.tanggal === today);
     
     const relevantAbsensi = absensiToday.filter(a => filteredSiswa.some(s => s.id === a.idSiswa));
     
-    const hadirToday = relevantAbsensi.filter(a => a.status === 'HADIR').length;
-    const terlambatToday = relevantAbsensi.filter(a => a.status === 'TERLAMBAT').length;
+    const hadirToday = relevantAbsensi.filter(a => (a.status || '').toString().toUpperCase() === 'HADIR').length;
+    const terlambatToday = relevantAbsensi.filter(a => (a.status || '').toString().toUpperCase() === 'TERLAMBAT').length;
     const totalSiswa = filteredSiswa.length;
 
     return {
       totalSiswa,
       hadirToday,
       terlambatToday,
-      tidakHadirToday: totalSiswa - (hadirToday + terlambatToday)
+      tidakHadirToday: Math.max(0, totalSiswa - (hadirToday + terlambatToday))
     };
   }
 
-  async getAbsensiLogs(user: any) {
-    if (GAS_URL) await this.fetchFromGAS();
+  async getAbsensiLogs(user: any, force = false) {
+    if (GAS_URL) await this.fetchFromGAS(force);
     const filteredSiswa = this.filterByRole(this.siswa, user);
     
     return this.absensi

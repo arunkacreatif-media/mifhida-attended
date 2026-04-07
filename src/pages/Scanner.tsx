@@ -49,8 +49,8 @@ export default function Scanner({ user }: { user: any }) {
     };
   }, [user]);
 
-  const fetchLogs = async () => {
-    const data = await api.getAbsensiLogs(user);
+  const fetchLogs = async (force = false) => {
+    const data = await api.getAbsensiLogs(user, force);
     setLogs(data.slice(0, 10)); // Show last 10 logs
   };
 
@@ -130,7 +130,7 @@ export default function Scanner({ user }: { user: any }) {
       if (result.success) {
         setScanResult(result.data);
         showToast(`Data absensi ${result.data.nama} berhasil terkirim ke sistem`);
-        fetchLogs();
+        fetchLogs(true);
         
         // Auto-send WA if enabled
         if (autoSendWA && result.data.wa) {
@@ -322,7 +322,7 @@ export default function Scanner({ user }: { user: any }) {
               <History className="text-emerald-600" />
               Riwayat Terakhir
             </h2>
-            <button onClick={fetchLogs} className="p-2 hover:bg-gray-100 rounded-xl transition-colors text-gray-400">
+            <button onClick={() => fetchLogs(true)} className="p-2 hover:bg-gray-100 rounded-xl transition-colors text-gray-400">
               <RefreshCw size={20} />
             </button>
           </div>
