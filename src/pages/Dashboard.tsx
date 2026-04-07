@@ -11,7 +11,8 @@ import {
   AlertCircle,
   Camera,
   FileText,
-  LayoutDashboard
+  LayoutDashboard,
+  RefreshCw
 } from 'lucide-react';
 import { api } from '../services/api';
 import { UserRole } from '../lib/constants';
@@ -19,13 +20,24 @@ import { UserRole } from '../lib/constants';
 export default function Dashboard({ user, onNavigate }: { user: any, onNavigate: (page: string) => void }) {
   const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
-  useEffect(() => {
-    const fetchStats = async () => {
+  const fetchStats = async (showLoading = true) => {
+    if (showLoading) setLoading(true);
+    else setIsRefreshing(true);
+    
+    try {
       const data = await api.getDashboardStats(user);
       setStats(data);
+    } catch (error) {
+      console.error("Error fetching stats:", error);
+    } finally {
       setLoading(false);
-    };
+      setIsRefreshing(false);
+    }
+  };
+
+  useEffect(() => {
     fetchStats();
   }, [user]);
 
@@ -39,8 +51,20 @@ export default function Dashboard({ user, onNavigate }: { user: any, onNavigate:
     <div className="space-y-6">
       <div className="bg-emerald-800 rounded-[2.5rem] p-8 text-white shadow-xl relative overflow-hidden">
         <div className="relative z-10">
-          <h2 className="text-[16px] font-black mb-1 opacity-90">Assalamu'alaikum,</h2>
-          <p className="text-[18px] font-black text-gold leading-tight">{user.nama}</p>
+          <div className="flex justify-between items-start">
+            <div>
+              <h2 className="text-[16px] font-black mb-1 opacity-90">Assalamu'alaikum,</h2>
+              <p className="text-[18px] font-black text-gold leading-tight">{user.nama}</p>
+            </div>
+            <button 
+              onClick={() => fetchStats(false)}
+              disabled={isRefreshing}
+              className={`p-3 bg-white/10 hover:bg-white/20 rounded-2xl transition-all active:scale-95 ${isRefreshing ? 'opacity-50' : ''}`}
+              title="Refresh Data"
+            >
+              <RefreshCw size={20} className={isRefreshing ? 'animate-spin' : ''} />
+            </button>
+          </div>
           <div className="mt-4 inline-flex items-center gap-2 px-3 py-1 bg-white/20 rounded-full text-[10px] font-bold backdrop-blur-sm">
             <div className="w-2 h-2 bg-gold rounded-full animate-pulse"></div>
             {user.role === UserRole.WALI_KELAS ? `Wali Kelas ${user.kelas_diampu}` : user.role.replace('_', ' ')}
