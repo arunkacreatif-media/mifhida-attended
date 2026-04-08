@@ -25,10 +25,10 @@ export default function Login({ onLogin }: { onLogin: (user: any) => void }) {
       if (result.success) {
         onLogin(result.user);
       } else {
-        setError(result.message || 'Login gagal');
+        setError(result.message || 'Email atau Password salah');
       }
-    } catch (err) {
-      setError('Terjadi kesalahan sistem');
+    } catch (err: any) {
+      setError(err.message || 'Terjadi kesalahan sistem saat login');
     } finally {
       setLoading(false);
     }

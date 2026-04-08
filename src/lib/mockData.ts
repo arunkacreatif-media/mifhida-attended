@@ -6,11 +6,11 @@
 import { UserRole } from './constants';
 
 export const INITIAL_USERS = [
-  { email: 'arunkacreatif@gmail.com', password: 'admin123', role: UserRole.ADMIN, nama: 'Administrator Yayasan' },
-  { email: 'admin@gmail.com', password: 'admin123', role: UserRole.ADMIN, nama: 'Administrator Yayasan' },
-  { email: 'guru1@gmail.com', password: 'guru123', role: UserRole.WALI_KELAS, nama: 'Ustadzah Fatimah' },
-  { email: 'guru2@gmail.com', password: 'guru123', role: UserRole.WALI_KELAS, nama: 'Ustadz Ahmad' },
-  { email: 'kepala@gmail.com', password: 'kepala123', role: UserRole.KEPALA_SEKOLAH, nama: 'H. Muhammad Yusuf' },
+  { email: 'admin@mifhida.com', password: 'admin123', role: UserRole.ADMIN, nama: 'maswardi', kelas_diampu: 'ALL' },
+  { email: 'guru1@mifhida.com', password: 'guru123', role: UserRole.WALI_KELAS, nama: 'Ustz. Sunarti', kelas_diampu: 'SD' },
+  { email: 'guru2@mifhida.com', password: 'guru123', role: UserRole.WALI_KELAS, nama: 'Ustz. Fatimah', kelas_diampu: 'TK' },
+  { email: 'guru3@mifhida.com', password: 'guru123', role: UserRole.WALI_KELAS, nama: 'Ustz. Sulis Setyowati', kelas_diampu: 'KB' },
+  { email: 'kepala@mifhida.com', password: 'kepala123', role: UserRole.KEPALA_SEKOLAH, nama: 'Ust. Samsuri', kelas_diampu: 'ALL' },
 ];
 
 export const INITIAL_SISWA = [

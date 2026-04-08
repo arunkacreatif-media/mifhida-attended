@@ -13,99 +13,97 @@ class ApiService {
   private siswa: any[] = [];
   private absensi: any[] = [];
   private isFetching = false;
+  private fetchPromise: Promise<void> | null = null;
   private lastFetchTime = 0;
   private FETCH_COOLDOWN = 2000; // 2 detik cooldown
 
   constructor() {
-    // Jika tidak ada GAS_URL, gunakan data dummy
-    if (!GAS_URL) {
-      this.users = [...INITIAL_USERS];
-      this.siswa = [...INITIAL_SISWA];
-      this.absensi = [...INITIAL_ABSENSI];
-    }
+    // Inisialisasi awal dengan data dummy agar aplikasi bisa langsung digunakan
+    this.users = [...INITIAL_USERS];
+    this.siswa = [...INITIAL_SISWA];
+    this.absensi = [...INITIAL_ABSENSI];
+    
     this.init();
   }
 
   private async init() {
+    this.loadFromLocalStorage();
     if (GAS_URL) {
       await this.fetchFromGAS();
-    } else {
-      this.loadFromLocalStorage();
     }
   }
 
   private async fetchFromGAS(force = false) {
-    if (this.isFetching) return;
+    // Jika sedang fetching, tunggu hingga selesai
+    if (this.isFetching && this.fetchPromise) {
+      return this.fetchPromise;
+    }
     
     if (!GAS_URL || !GAS_URL.startsWith('https://script.google.com')) {
-      console.warn('GAS_URL tidak valid atau belum dikonfigurasi. Menggunakan data lokal.');
-      this.loadFromLocalStorage();
       return;
     }
 
-    // Jangan fetch terlalu sering (cooldown), kecuali dipaksa (force)
     const now = Date.now();
     if (!force && (now - this.lastFetchTime < this.FETCH_COOLDOWN)) return;
 
     this.isFetching = true;
-    const controller = new AbortController();
-    // Tingkatkan timeout ke 60 detik karena GAS bisa sangat lambat
-    const timeoutId = setTimeout(() => {
-      controller.abort();
-    }, 60000);
+    this.fetchPromise = (async () => {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 120000);
 
-    try {
-      const ts = Date.now();
-      console.log('Sinkronisasi data dengan Spreadsheet...');
-      
-      // Sequential fetch untuk menghindari limit eksekusi konkuren di GAS
-      // Ini lebih lambat tapi lebih stabil untuk koneksi yang tidak menentu
-      
-      const siswaRes = await fetch(`${GAS_URL}?action=getSiswa&_t=${ts}`, { signal: controller.signal, redirect: 'follow' });
-      if (siswaRes.ok) {
-        const data = await siswaRes.json();
-        if (Array.isArray(data)) {
-          this.siswa = this.normalizeData(data);
-          localStorage.setItem('MH_SISWA', JSON.stringify(this.siswa));
+      try {
+        const ts = Date.now();
+        console.log('Sinkronisasi data dengan Spreadsheet...');
+        
+        // Sequential fetch
+        const siswaRes = await fetch(`${GAS_URL}?action=getSiswa&_t=${ts}`, { signal: controller.signal, redirect: 'follow' });
+        if (siswaRes.ok) {
+          const data = await siswaRes.json();
+          if (Array.isArray(data) && data.length > 0) {
+            this.siswa = this.normalizeData(data);
+            localStorage.setItem('MH_SISWA', JSON.stringify(this.siswa));
+          }
         }
-      }
 
-      // Beri jeda sedikit antar request agar GAS tidak overload
-      await new Promise(resolve => setTimeout(resolve, 500));
+        await new Promise(resolve => setTimeout(resolve, 500));
 
-      const absensiRes = await fetch(`${GAS_URL}?action=getAbsensi&_t=${ts}`, { signal: controller.signal, redirect: 'follow' });
-      if (absensiRes.ok) {
-        const data = await absensiRes.json();
-        if (Array.isArray(data)) {
-          this.absensi = this.normalizeData(data);
-          localStorage.setItem('MH_ABSENSI', JSON.stringify(this.absensi));
+        const absensiRes = await fetch(`${GAS_URL}?action=getAbsensi&_t=${ts}`, { signal: controller.signal, redirect: 'follow' });
+        if (absensiRes.ok) {
+          const data = await absensiRes.json();
+          if (Array.isArray(data)) {
+            this.absensi = this.normalizeData(data);
+            localStorage.setItem('MH_ABSENSI', JSON.stringify(this.absensi));
+          }
         }
-      }
 
-      await new Promise(resolve => setTimeout(resolve, 500));
+        await new Promise(resolve => setTimeout(resolve, 500));
 
-      const usersRes = await fetch(`${GAS_URL}?action=getUsers&_t=${ts}`, { signal: controller.signal, redirect: 'follow' });
-      if (usersRes.ok) {
-        const data = await usersRes.json();
-        if (Array.isArray(data)) {
-          this.users = this.normalizeData(data);
-          localStorage.setItem('MH_USERS', JSON.stringify(this.users));
+        const usersRes = await fetch(`${GAS_URL}?action=getUsers&_t=${ts}`, { signal: controller.signal, redirect: 'follow' });
+        if (usersRes.ok) {
+          const data = await usersRes.json();
+          if (Array.isArray(data) && data.length > 0) {
+            this.users = this.normalizeData(data);
+            localStorage.setItem('MH_USERS', JSON.stringify(this.users));
+          }
         }
+        
+        this.lastFetchTime = Date.now();
+        console.log('Sinkronisasi berhasil.');
+      } catch (err: any) {
+        if (err.name === 'AbortError') {
+          console.error('Koneksi ke Spreadsheet terputus: Waktu habis (Timeout 120s).');
+        } else {
+          console.error('Kesalahan koneksi Spreadsheet:', err.message);
+        }
+        // Jika gagal, data tetap menggunakan yang ada di memori/local storage
+      } finally {
+        clearTimeout(timeoutId);
+        this.isFetching = false;
+        this.fetchPromise = null;
       }
-      
-      this.lastFetchTime = Date.now();
-      console.log('Sinkronisasi berhasil.');
-    } catch (err: any) {
-      if (err.name === 'AbortError') {
-        console.error('Koneksi ke Spreadsheet terputus: Waktu habis (Timeout 60s).');
-      } else {
-        console.error('Kesalahan koneksi Spreadsheet:', err.message);
-      }
-      this.loadFromLocalStorage();
-    } finally {
-      clearTimeout(timeoutId);
-      this.isFetching = false;
-    }
+    })();
+
+    return this.fetchPromise;
   }
 
   private normalizeData(data: any[]) {
@@ -166,12 +164,40 @@ class ApiService {
   }
 
   async login(email, password) {
-    if (GAS_URL) await this.fetchFromGAS(true);
-    const user = this.users.find(u => u.email === email && u.password === password);
+    // Saat login, coba sinkronisasi tapi beri batas waktu agar tidak hang
+    if (GAS_URL) {
+      try {
+        // Beri waktu maksimal 10 detik untuk sinkronisasi saat login
+        // Jika lebih dari itu, gunakan data yang sudah ada (local/memory)
+        await Promise.race([
+          this.fetchFromGAS(true),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('Sync timeout')), 10000))
+        ]);
+      } catch (e) {
+        console.warn('Login proceeding with local data due to sync delay/error');
+      }
+    }
+
+    const user = this.users.find(u => 
+      u.email.toString().trim().toLowerCase() === email.toString().trim().toLowerCase() && 
+      u.password.toString().trim() === password.toString().trim()
+    );
+
     if (user) {
       return { success: true, user: { ...user } };
     }
-    return { success: false, message: 'Email atau Password salah' };
+
+    // Jika gagal dan data users masih kosong, coba load dari local storage sekali lagi
+    if (this.users.length === 0) {
+      this.loadFromLocalStorage();
+      const retryUser = this.users.find(u => 
+        u.email.toString().trim().toLowerCase() === email.toString().trim().toLowerCase() && 
+        u.password.toString().trim() === password.toString().trim()
+      );
+      if (retryUser) return { success: true, user: { ...retryUser } };
+    }
+
+    return { success: false, message: 'Email atau Password salah. Pastikan data di Spreadsheet sudah benar.' };
   }
 
   private filterByRole(data: any[], user: any) {
