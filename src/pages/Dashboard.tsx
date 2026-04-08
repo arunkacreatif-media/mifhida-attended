@@ -86,48 +86,105 @@ export default function Dashboard({ user, onNavigate }: { user: any, onNavigate:
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-        <StatCard 
-          label="Total Siswa" 
-          value={stats.totalSiswa} 
-          icon={Users} 
-          color="bg-blue-50 text-blue-600" 
-          subLabel="Terdaftar"
-        />
-        <StatCard 
-          label="Hadir" 
-          value={stats.hadirMonth} 
-          icon={CheckCircle} 
-          color="bg-emerald-50 text-emerald-600" 
-          subLabel="Tepat Waktu"
-        />
-        <StatCard 
-          label="Terlambat" 
-          value={stats.terlambatMonth} 
-          icon={Clock} 
-          color="bg-orange-50 text-orange-600" 
-          subLabel="Bulan Ini"
-        />
-        <StatCard 
-          label="Sakit" 
-          value={stats.sakitMonth} 
-          icon={FileText} 
-          color="bg-blue-50 text-blue-600" 
-          subLabel="Bulan Ini"
-        />
-        <StatCard 
-          label="Izin" 
-          value={stats.izinMonth} 
-          icon={FileText} 
-          color="bg-purple-50 text-purple-600" 
-          subLabel="Bulan Ini"
-        />
-        <StatCard 
-          label="Alfa" 
-          value={stats.alfaMonth} 
-          icon={AlertCircle} 
-          color="bg-red-50 text-red-600" 
-          subLabel="Tanpa Ket."
-        />
+        {user.role === UserRole.ADMIN || user.role === UserRole.KEPALA_SEKOLAH ? (
+          <>
+            <StatCard 
+              label="Total Siswa" 
+              value={`${stats.totalKB || 0} KB | ${stats.totalTK || 0} TK | ${stats.totalSD || 0} SD`} 
+              icon={Users} 
+              color="bg-blue-50 text-blue-600" 
+              subLabel="Keseluruhan"
+              isWide={true}
+            />
+            <StatCard 
+              label="Siswa KB Hadir" 
+              value={stats.hadirKB || 0} 
+              icon={CheckCircle} 
+              color="bg-emerald-50 text-emerald-600" 
+              subLabel="Bulan Ini"
+            />
+            <StatCard 
+              label="Siswa KB Absen" 
+              value={stats.absenKB || 0} 
+              icon={AlertCircle} 
+              color="bg-red-50 text-red-600" 
+              subLabel="Bulan Ini"
+            />
+            <StatCard 
+              label="Siswa TK Hadir" 
+              value={stats.hadirTK || 0} 
+              icon={CheckCircle} 
+              color="bg-emerald-50 text-emerald-600" 
+              subLabel="Bulan Ini"
+            />
+            <StatCard 
+              label="Siswa TK Absen" 
+              value={stats.absenTK || 0} 
+              icon={AlertCircle} 
+              color="bg-red-50 text-red-600" 
+              subLabel="Bulan Ini"
+            />
+            <StatCard 
+              label="Siswa SD Hadir" 
+              value={stats.hadirSD || 0} 
+              icon={CheckCircle} 
+              color="bg-emerald-50 text-emerald-600" 
+              subLabel="Bulan Ini"
+            />
+            <StatCard 
+              label="Siswa SD Absen" 
+              value={stats.absenSD || 0} 
+              icon={AlertCircle} 
+              color="bg-red-50 text-red-600" 
+              subLabel="Bulan Ini"
+            />
+          </>
+        ) : (
+          <>
+            <StatCard 
+              label="Total Siswa" 
+              value={stats.totalSiswa} 
+              icon={Users} 
+              color="bg-blue-50 text-blue-600" 
+              subLabel="Terdaftar"
+            />
+            <StatCard 
+              label="Hadir" 
+              value={stats.hadirMonth} 
+              icon={CheckCircle} 
+              color="bg-emerald-50 text-emerald-600" 
+              subLabel="Tepat Waktu"
+            />
+            <StatCard 
+              label="Terlambat" 
+              value={stats.terlambatMonth} 
+              icon={Clock} 
+              color="bg-orange-50 text-orange-600" 
+              subLabel="Bulan Ini"
+            />
+            <StatCard 
+              label="Sakit" 
+              value={stats.sakitMonth} 
+              icon={FileText} 
+              color="bg-blue-50 text-blue-600" 
+              subLabel="Bulan Ini"
+            />
+            <StatCard 
+              label="Izin" 
+              value={stats.izinMonth} 
+              icon={FileText} 
+              color="bg-purple-50 text-purple-600" 
+              subLabel="Bulan Ini"
+            />
+            <StatCard 
+              label="Alfa" 
+              value={stats.alfaMonth} 
+              icon={AlertCircle} 
+              color="bg-red-50 text-red-600" 
+              subLabel="Tanpa Ket."
+            />
+          </>
+        )}
       </div>
 
       <div className="bg-white rounded-[2rem] p-6 shadow-sm border border-gray-100">
@@ -144,9 +201,9 @@ export default function Dashboard({ user, onNavigate }: { user: any, onNavigate:
   );
 }
 
-function StatCard({ label, value, icon: Icon, color, subLabel }: any) {
+function StatCard({ label, value, icon: Icon, color, subLabel, isWide }: any) {
   return (
-    <div className="bg-white p-5 rounded-[2rem] shadow-sm border border-gray-100 flex flex-col gap-3">
+    <div className={`bg-white p-5 rounded-[2rem] shadow-sm border border-gray-100 flex flex-col gap-3 ${isWide ? 'col-span-2 md:col-span-3' : ''}`}>
       <div className={`w-10 h-10 ${color} rounded-2xl flex items-center justify-center`}>
         <Icon size={20} />
       </div>

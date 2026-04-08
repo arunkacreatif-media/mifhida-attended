@@ -114,15 +114,15 @@ export default function Students({ user }: { user: any }) {
   };
 
   const filteredStudents = students.filter(s => {
-    const name = s.nama || '';
-    const id = s.id || '';
-    const jenjang = s.jenjang || '';
+    const name = (s.nama || '').toString();
+    const id = (s.id || '').toString();
+    const jenjang = (s.jenjang || '').toString().trim().toUpperCase();
     
     const matchesSearch = name.toLowerCase().includes(searchTerm.toLowerCase()) || 
                           id.toLowerCase().includes(searchTerm.toLowerCase());
     
     const matchesJenjang = filterJenjang === 'ALL' || 
-                           jenjang.toString().trim().toUpperCase() === filterJenjang.toUpperCase();
+                           jenjang === filterJenjang.toUpperCase();
     
     return matchesSearch && matchesJenjang;
   });

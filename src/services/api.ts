@@ -341,10 +341,10 @@ class ApiService {
       return filteredSiswa.some(s => this.getEntityId(s) === aId);
     });
     
-    const getCount = (status: string) => 
-      relevantAbsensi.filter(a => (a.status || '').toString().toUpperCase().trim() === status).length;
+    const getCount = (status: string, data: any[] = relevantAbsensi) => 
+      data.filter(a => (a.status || '').toString().toUpperCase().trim() === status).length;
 
-    const stats = {
+    const stats: any = {
       totalSiswa: filteredSiswa.length,
       hadirToday: getCount('HADIR'),
       terlambatToday: getCount('TERLAMBAT'),
@@ -353,6 +353,22 @@ class ApiService {
       alfaToday: getCount('ALFA'),
       tidakHadirToday: Math.max(0, filteredSiswa.length - relevantAbsensi.length)
     };
+
+    // Add detailed stats for Admin/Kepala Sekolah
+    if (user.role === UserRole.ADMIN || user.role === UserRole.KEPALA_SEKOLAH) {
+      const jenjangList = ['KB', 'TK', 'SD'];
+      jenjangList.forEach(jenjang => {
+        const siswaJenjang = this.siswa.filter(s => (s.jenjang || '').toString().toUpperCase() === jenjang);
+        const absensiJenjang = absensiToday.filter(a => {
+          const aId = this.getEntityId(a);
+          return siswaJenjang.some(s => this.getEntityId(s) === aId);
+        });
+
+        stats[`total${jenjang}`] = siswaJenjang.length;
+        stats[`hadir${jenjang}`] = absensiJenjang.filter(a => (a.status || '').toString().toUpperCase().trim() === 'HADIR').length;
+        stats[`absen${jenjang}`] = Math.max(0, siswaJenjang.length - absensiJenjang.length);
+      });
+    }
 
     console.log(`[DASHBOARD] Stats for ${todayStr}:`, stats);
     return stats;
@@ -380,10 +396,10 @@ class ApiService {
       return filteredSiswa.some(s => this.getEntityId(s) === aId);
     });
     
-    const getCount = (status: string) => 
-      relevantAbsensi.filter(a => (a.status || '').toString().toUpperCase().trim() === status).length;
+    const getCount = (status: string, data: any[] = relevantAbsensi) => 
+      data.filter(a => (a.status || '').toString().toUpperCase().trim() === status).length;
 
-    const stats = {
+    const stats: any = {
       totalSiswa: filteredSiswa.length,
       hadirMonth: getCount('HADIR'),
       terlambatMonth: getCount('TERLAMBAT'),
@@ -392,6 +408,25 @@ class ApiService {
       alfaMonth: getCount('ALFA'),
       monthName: now.toLocaleString('id-ID', { month: 'long', year: 'numeric' })
     };
+
+    // Add detailed monthly stats for Admin/Kepala Sekolah
+    if (user.role === UserRole.ADMIN || user.role === UserRole.KEPALA_SEKOLAH) {
+      const jenjangList = ['KB', 'TK', 'SD'];
+      jenjangList.forEach(jenjang => {
+        const siswaJenjang = this.siswa.filter(s => (s.jenjang || '').toString().toUpperCase() === jenjang);
+        const absensiJenjang = absensiMonth.filter(a => {
+          const aId = this.getEntityId(a);
+          return siswaJenjang.some(s => this.getEntityId(s) === aId);
+        });
+
+        stats[`total${jenjang}`] = siswaJenjang.length;
+        stats[`hadir${jenjang}`] = absensiJenjang.filter(a => (a.status || '').toString().toUpperCase().trim() === 'HADIR').length;
+        // Absen in monthly context usually means total days missed across all students in that jenjang
+        // But here we might want "students who haven't attended at all this month" or just sum of absences
+        // For simplicity and matching user request "siswa KB absen", we'll use daily-style logic or total absences
+        stats[`absen${jenjang}`] = getCount('ALFA', absensiJenjang); 
+      });
+    }
 
     console.log(`[DASHBOARD] Monthly Stats for ${monthStr}:`, stats);
     return stats;
