@@ -32,7 +32,6 @@ export default function Scanner({ user }: { user: any }) {
   const [manualId, setManualId] = useState('');
   const [attendanceStatus, setAttendanceStatus] = useState(ATTENDANCE_STATUS.AUTO);
   const [keterangan, setKeterangan] = useState('');
-  const [autoSendWA, setAutoSendWA] = useState(false);
   const [toast, setToast] = useState<{ isVisible: boolean; message: string; type: ToastType }>({
     isVisible: false,
     message: '',
@@ -58,35 +57,6 @@ export default function Scanner({ user }: { user: any }) {
 
   const showToast = (message: string, type: ToastType = 'success') => {
     setToast({ isVisible: true, message, type });
-  };
-
-  const cleanPhone = (phone: string) => {
-    if (!phone) return '';
-    // Hapus semua karakter non-digit
-    let cleaned = phone.toString().replace(/\D/g, '');
-    // Jika dimulai dengan 0, ganti dengan 62
-    if (cleaned.startsWith('0')) {
-      cleaned = '62' + cleaned.substring(1);
-    }
-    // Jika dimulai dengan 8 (tanpa kode negara), tambahkan 62
-    else if (cleaned.startsWith('8')) {
-      cleaned = '62' + cleaned;
-    }
-    return cleaned;
-  };
-
-  const sendWhatsApp = (data: any) => {
-    const phone = cleanPhone(data.wa);
-    if (!phone) {
-      showToast('Nomor WhatsApp wali tidak ditemukan', 'error');
-      return;
-    }
-
-    const statusEmoji = data.status.toUpperCase() === 'HADIR' ? '✅' : '⏰';
-    const message = `*ABSENSI SISWA - YPI MH*\n\nAssalamu'alaikum Wr. Wb.\n\nMenginfokan bahwa ananda:\n👤 *${data.nama}*\n\nTelah melakukan absensi pada:\n📅 Hari/Tgl: ${today}\n⌚ Jam: ${data.jam}\n${statusEmoji} Status: *${data.status}*\n\nTerima kasih atas perhatiannya.\n\n_Pesan otomatis dari Sistem Absensi QR_`;
-    
-    const waUrl = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
-    window.open(waUrl, '_blank');
   };
 
   const startScanner = () => {
@@ -196,12 +166,7 @@ export default function Scanner({ user }: { user: any }) {
         // Reset keterangan after manual entry
         setKeterangan('');
         
-        // Auto-send WA if enabled
-        if (autoSendWA && result.data.wa) {
-          sendWhatsApp(result.data);
-        }
-        
-        // Auto-reset after 5 seconds if WA not clicked
+        // Auto-reset after 5 seconds
         setTimeout(() => {
           setScanResult((prev: any) => {
             if (prev && prev.nama === result.data.nama) {
@@ -251,7 +216,7 @@ export default function Scanner({ user }: { user: any }) {
                     onClick={() => setAttendanceStatus(status)}
                     className={`px-3 py-1.5 rounded-lg text-[10px] font-black transition-all whitespace-nowrap ${attendanceStatus === status ? 'bg-emerald-600 text-white shadow-md' : 'text-gray-500'}`}
                   >
-                    {status}
+                    {status === 'AUTO' ? 'OTOMATIS' : status}
                   </button>
                 ))}
               </div>
@@ -267,24 +232,6 @@ export default function Scanner({ user }: { user: any }) {
                 className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none text-body"
               />
             </div>
-          </div>
-
-          <div className="w-full flex items-center justify-between mb-4 px-4 py-3 bg-emerald-50 rounded-2xl border border-emerald-100">
-            <div className="flex items-center gap-3">
-              <div className={`p-2 rounded-lg ${autoSendWA ? 'bg-emerald-500 text-white' : 'bg-gray-200 text-gray-400'}`}>
-                <MessageSquare size={16} />
-              </div>
-              <div>
-                <p className="text-caption font-black text-emerald-900">Kirim WA Otomatis</p>
-                <p className="text-caption text-emerald-600 font-medium opacity-80">Buka WA setelah scan berhasil</p>
-              </div>
-            </div>
-            <button 
-              onClick={() => setAutoSendWA(!autoSendWA)}
-              className={`w-12 h-6 rounded-full transition-all relative ${autoSendWA ? 'bg-emerald-500' : 'bg-gray-300'}`}
-            >
-              <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${autoSendWA ? 'right-1' : 'left-1'}`} />
-            </button>
           </div>
 
           <div className="relative w-full aspect-square max-w-sm bg-gray-900 rounded-[2rem] overflow-hidden shadow-2xl border-8 border-white group">
@@ -324,21 +271,16 @@ export default function Scanner({ user }: { user: any }) {
                   <h4 className="text-[20px] font-black mb-2">BERHASIL!</h4>
                   <p className="text-[16px] font-bold text-emerald-100">{scanResult.nama}</p>
                   <p className="text-emerald-200 mt-2 text-body font-medium">Tercatat pukul {scanResult.jam}</p>
-                  
-                  <button 
-                    onClick={() => sendWhatsApp(scanResult)}
-                    className="mt-6 flex items-center gap-2 px-6 py-3 bg-white text-emerald-700 rounded-2xl font-black shadow-xl hover:bg-emerald-50 transition-all active:scale-95"
-                  >
-                    <MessageSquare size={20} />
-                    Kirim WhatsApp Wali
-                  </button>
+                  <div className="mt-2 px-4 py-1 bg-white/20 rounded-full text-xs font-black uppercase tracking-widest">
+                    Status: {scanResult.status}
+                  </div>
                   
                   <button 
                     onClick={() => {
                       setScanResult(null);
                       if (scannerRef.current) scannerRef.current.resume();
                     }}
-                    className="mt-4 text-xs text-emerald-200 font-bold hover:text-white transition-colors"
+                    className="mt-8 text-xs text-emerald-200 font-bold hover:text-white transition-colors border border-emerald-400/30 px-4 py-2 rounded-xl"
                   >
                     Tutup (Otomatis dalam 5 detik)
                   </button>
@@ -422,13 +364,6 @@ export default function Scanner({ user }: { user: any }) {
                   <div className="flex items-center justify-between">
                     <p className="text-body font-black text-gray-900">{log.nama || log.idSiswa}</p>
                     <div className="flex items-center gap-2">
-                      <button 
-                        onClick={() => sendWhatsApp(log)}
-                        className="p-1.5 hover:bg-emerald-100 text-emerald-600 rounded-lg transition-colors"
-                        title="Kirim WhatsApp"
-                      >
-                        <MessageSquare size={14} />
-                      </button>
                       <span className="text-caption font-black px-2 py-1 bg-white rounded-lg text-gray-400 border border-gray-100">{log.jam}</span>
                     </div>
                   </div>

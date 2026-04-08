@@ -235,22 +235,6 @@ class ApiService {
     return { success: true };
   }
 
-  private async sendWhatsApp(target: string, message: string) {
-    try {
-      const res = await fetch('/api/send-whatsapp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ target, message })
-      });
-      const result = await res.json();
-      console.log('WhatsApp Notification Result:', result);
-      return result;
-    } catch (err: any) {
-      console.error('Failed to send WhatsApp notification:', err.message);
-      return { success: false, message: err.message };
-    }
-  }
-
   async submitAbsensi(idSiswa, status, keterangan = '') {
     const sId = this.normalizeId(idSiswa);
     const siswa = this.siswa.find(s => this.normalizeId(s.id) === sId);
@@ -259,12 +243,18 @@ class ApiService {
     const now = new Date();
     const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
     
+    // Pengecekan teliti untuk mencegah 1 siswa 2 kali presensi dalam hari yang sama
     const alreadyAbsen = this.absensi.find(a => 
       this.normalizeId(a.idsiswa) === sId && 
       this.formatDate(a.tanggal) === today
     );
     
-    if (alreadyAbsen) return { success: false, message: 'Sudah absen hari ini' };
+    if (alreadyAbsen) {
+      return { 
+        success: false, 
+        message: `Siswa ${siswa.nama} sudah melakukan presensi hari ini pada pukul ${alreadyAbsen.jam}` 
+      };
+    }
 
     const jam = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
     const newAbsensi = { idsiswa: idSiswa, tanggal: today, jam, status, keterangan };
@@ -276,20 +266,6 @@ class ApiService {
 
     this.absensi.push(newAbsensi);
     this.save();
-
-    // Kirim Notifikasi WhatsApp via Fonnte (Server-side)
-    if (siswa.wa) {
-      const message = `*Pemberitahuan Absensi YPI Miftahul Hidayah*\n\n` +
-                      `Ananda: *${siswa.nama}*\n` +
-                      `Kelas: *${siswa.kelas}*\n` +
-                      `Status: *${status}*\n` +
-                      `Waktu: *${jam}*\n` +
-                      `Keterangan: ${keterangan || '-'}\n\n` +
-                      `Terima kasih.`;
-      
-      // Kirim tanpa menunggu (background) agar tidak memperlambat UI
-      this.sendWhatsApp(siswa.wa, message);
-    }
     
     return { 
       success: true, 
