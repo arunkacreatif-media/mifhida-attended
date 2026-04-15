@@ -32,8 +32,8 @@ export const KELAS = {
 
 export const ATTENDANCE_RULES = {
   START_TIME: '06:00',
-  LATE_TIME: '07:15',
-  END_TIME: '08:30',
+  LATE_TIME: '08:15',
+  END_TIME: '09:30',
 };
 
 export const ATTENDANCE_STATUS = {
